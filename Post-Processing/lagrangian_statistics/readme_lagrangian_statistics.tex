@@ -1,0 +1,25 @@
+\documentclass{article}
+\usepackage{siunitx}
+
+\title{Lagrangian statistics toolbox}
+\author{Thomas Basset}
+
+\begin{document}
+
+\maketitle
+
+\section{Why to use it?}
+For a given set of tracks, this MATLAB toolbox enables to compute basic Lagrangian statistics: autocorrelation functions and structure functions. 
+
+\section{How to use it?}
+As an example, we use the file \textit{tracks\_sample.mat} available in the HDF5 storage toolbox (cf. \textit{readme\_hdf5\_storage}). Once the statistics are computed, we can extract the integral time scale from the Lagrangian velocity autocorrelation function ($T \simeq \SI{30}{ms}$) and the linear slope from the Lagrangian second order structure function ($C_0 \varepsilon \simeq \SI{1.7}{W/kg}$, according to $\varepsilon \simeq \SI{0.9}{W/kg}$ found with the pair dispersion toolbox, we have $C_0 \simeq 2$). The script \textit{run\_lagrangian\_statistics} gives a run example.
+
+\section{Functions}
+\textit{help function name} gives some documentation, especially input and output arguments. These functions are commented and designed to be easily modified.
+\begin{itemize}
+\item \textit{lagstats\_onetrack}: compute Lagrangian statistics for one track
+\item \textit{lagstats\_tracks}: compute Lagrangian statistics for all tracks with \textit{lagstats\_onetrack} and compute the mean over the tracks with \textit{meancell}
+\item \textit{meancell}: compute the mean of array cells of different lengths
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,130 @@
+O hai! Howz u? 
+Size:401 # of cells: 40000000
+output file: /home/eberna07/Stage_EB_2020/4d-ptv/Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Rays/rays_31-40_out_cpp.bin
+/home/eberna07/Stage_EB_2020/4d-ptv/Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Rays/rays_31-40.dat opened!
+#######
+Frame: 1
+Number of rays: 10432
+22-04-2020 10:22:41
+# of rays for each camera: {1: 3427, 2: 3486, 3: 3519}
+# of rays that miss the bounding box: {2: 161}
+# of voxels traversed after expansion: 14916646
+Prune based on number of cameras: 1771099
+Duplicate candidates removed: 131575
+Selecting the best matches with upto 2 match(es)/ray out of 131575 candidates
+Selecting done. 7244 matched found (out of 131575 candidates)
+Number of matches: 7244
+#######
+Frame: 2
+Number of rays: 10394
+22-04-2020 10:23:10
+# of rays for each camera: {1: 3415, 2: 3486, 3: 3493}
+# of rays that miss the bounding box: {2: 161}
+# of voxels traversed after expansion: 14846815
+Prune based on number of cameras: 1752364
+Duplicate candidates removed: 129623
+Selecting the best matches with upto 2 match(es)/ray out of 129623 candidates
+Selecting done. 7216 matched found (out of 129623 candidates)
+Number of matches: 7216
+#######
+Frame: 3
+Number of rays: 10385
+22-04-2020 10:23:40
+# of rays for each camera: {1: 3416, 2: 3488, 3: 3481}
+# of rays that miss the bounding box: {2: 166}
+# of voxels traversed after expansion: 14820663
+Prune based on number of cameras: 1745905
+Duplicate candidates removed: 128828
+Selecting the best matches with upto 2 match(es)/ray out of 128828 candidates
+Selecting done. 7209 matched found (out of 128828 candidates)
+Number of matches: 7209
+#######
+Frame: 4
+Number of rays: 10414
+22-04-2020 10:24:09
+# of rays for each camera: {1: 3423, 2: 3501, 3: 3490}
+# of rays that miss the bounding box: {2: 170}
+# of voxels traversed after expansion: 14859766
+Prune based on number of cameras: 1750686
+Duplicate candidates removed: 129686
+Selecting the best matches with upto 2 match(es)/ray out of 129686 candidates
+Selecting done. 7227 matched found (out of 129686 candidates)
+Number of matches: 7227
+#######
+Frame: 5
+Number of rays: 10408
+22-04-2020 10:24:38
+# of rays for each camera: {1: 3431, 2: 3492, 3: 3485}
+# of rays that miss the bounding box: {2: 165}
+# of voxels traversed after expansion: 14867283
+Prune based on number of cameras: 1758380
+Duplicate candidates removed: 130305
+Selecting the best matches with upto 2 match(es)/ray out of 130305 candidates
+Selecting done. 7242 matched found (out of 130305 candidates)
+Number of matches: 7242
+#######
+Frame: 6
+Number of rays: 10395
+22-04-2020 10:25:07
+# of rays for each camera: {1: 3441, 2: 3484, 3: 3470}
+# of rays that miss the bounding box: {2: 156}
+# of voxels traversed after expansion: 14856271
+Prune based on number of cameras: 1758580
+Duplicate candidates removed: 130337
+Selecting the best matches with upto 2 match(es)/ray out of 130337 candidates
+Selecting done. 7247 matched found (out of 130337 candidates)
+Number of matches: 7247
+#######
+Frame: 7
+Number of rays: 10388
+22-04-2020 10:25:36
+# of rays for each camera: {1: 3420, 2: 3477, 3: 3491}
+# of rays that miss the bounding box: {2: 158}
+# of voxels traversed after expansion: 14851500
+Prune based on number of cameras: 1752286
+Duplicate candidates removed: 129875
+Selecting the best matches with upto 2 match(es)/ray out of 129875 candidates
+Selecting done. 7237 matched found (out of 129875 candidates)
+Number of matches: 7237
+#######
+Frame: 8
+Number of rays: 10426
+22-04-2020 10:26:05
+# of rays for each camera: {1: 3424, 2: 3476, 3: 3526}
+# of rays that miss the bounding box: {2: 160}
+# of voxels traversed after expansion: 14905346
+Prune based on number of cameras: 1756768
+Duplicate candidates removed: 130455
+Selecting the best matches with upto 2 match(es)/ray out of 130455 candidates
+Selecting done. 7280 matched found (out of 130455 candidates)
+Number of matches: 7280
+#######
+Frame: 9
+Number of rays: 10380
+22-04-2020 10:26:34
+# of rays for each camera: {1: 3409, 2: 3473, 3: 3498}
+# of rays that miss the bounding box: {2: 160}
+# of voxels traversed after expansion: 14841207
+Prune based on number of cameras: 1749702
+Duplicate candidates removed: 129838
+Selecting the best matches with upto 2 match(es)/ray out of 129838 candidates
+Selecting done. 7200 matched found (out of 129838 candidates)
+Number of matches: 7200
+#######
+Frame: 10
+Number of rays: 10419
+22-04-2020 10:27:03
+# of rays for each camera: {1: 3430, 2: 3473, 3: 3516}
+# of rays that miss the bounding box: {2: 162}
+# of voxels traversed after expansion: 14889570
+Prune based on number of cameras: 1760450
+Duplicate candidates removed: 130485
+Selecting the best matches with upto 2 match(es)/ray out of 130485 candidates
+Selecting done. 7281 matched found (out of 130485 candidates)
+Number of matches: 7281
+
+Elapsed time = 291.045 sec
+
+Elapsed time/frame = 29.1045 sec
+
+ktxbye
