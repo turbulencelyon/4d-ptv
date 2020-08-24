@@ -7,7 +7,7 @@ pages:
     stage: docs
     script:
         - make -C Documentation html
-        - mv Documentation/_build/html/ public/
+        - mv Documentation/build/html/ public/
     artifacts:
         paths:
             - public
