@@ -2,3 +2,9 @@
 *.o
 Matching/STMCpp/STM
 Matching/STMCpp/STM_info
+
+# Compiled documentation
+Documentation/build
+
+# Temporary files
+*.swp

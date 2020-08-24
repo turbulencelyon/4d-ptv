@@ -1,0 +1,15 @@
+image: jsalort/py38:latest
+
+stages:
+    - docs
+
+pages:
+    stage: docs
+    script:
+        - make -C Documentation html
+        - mv Documentation/_build/html/ public/
+    artifacts:
+        paths:
+            - public
+    only:
+        - master
