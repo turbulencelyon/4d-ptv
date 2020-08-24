@@ -6,19 +6,10 @@
 Installation
 ------------
 
-Installation should be done from the repository,
+The last version of the code can be obtained from the gitlab repository:
 
 ```
-git clone https://gitlab.aliens-lyon.fr/ddumont/4d-ptv-official.git
-cd 4D-PTV/Documentation/
-make html
-make
+git clone https://gitlab.in2p3.fr/turbulence/4d-ptv.git
 ```
 
-The ``make html`` command creates the documentation webpage. To show it
-```
-cd build/html/
-```
-Open Tutorial.html
-
-The ``make`` command compile all codes.
+Please refer to the [online documentation](https://turbulence.pages.in2p3.fr/4d-ptv/) for more information.
