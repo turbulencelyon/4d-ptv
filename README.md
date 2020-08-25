@@ -12,4 +12,4 @@ The last version of the code can be obtained from the gitlab repository:
 git clone https://github.com/turbulencelyon/4d-ptv
 ```
 
-Please refer to the [online documentation](https://turbulence.pages.in2p3.fr/4d-ptv/) for more information.
+Please refer to the [online documentation](https://4d-ptv.readthedocs.io/en/latest/) for more information.
