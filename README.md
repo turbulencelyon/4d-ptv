@@ -11,5 +11,13 @@ The last version of the code can be obtained from the gitlab repository:
 ```
 git clone https://github.com/turbulencelyon/4d-ptv
 ```
+To compile all executable files:
+
+```
+cd Documentation/
+make
+cd ../Matching/STMCpp/
+make
+```
 
 Please refer to the [online documentation](https://4d-ptv.readthedocs.io/en/latest/) for more information.
