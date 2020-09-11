@@ -1,0 +1,5 @@
+name: ptv_doc
+
+dependencies:
+    - pip:
+        - sphinxcontrib-matlabdomain

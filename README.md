@@ -6,19 +6,18 @@
 Installation
 ------------
 
-Installation should be done from the repository,
+The last version of the code can be obtained from the gitlab repository:
 
 ```
-git clone https://gitlab.aliens-lyon.fr/ddumont/4d-ptv-official.git
-cd 4D-PTV/Documentation/
-make html
+git clone https://github.com/turbulencelyon/4d-ptv
+```
+To compile all executable files:
+
+```
+cd Documentation/
+make
+cd ../Matching/STMCpp/
 make
 ```
 
-The ``make html`` command creates the documentation webpage. To show it
-```
-cd build/html/
-```
-Open Tutorial.html
-
-The ``make`` command compile all codes.
+Please refer to the [online documentation](https://4d-ptv.readthedocs.io/en/latest/) for more information.
