@@ -66,17 +66,37 @@ The function creates in the rays folder a file called *matched_cam{cammatch}_{mi
 C++ way
 --------
 
-The ``C++`` script is al least 5 times faster than the ``Python`` one. This script should be use when you try to track more than 500-1000 particles because then the ``Python`` script is to long. If you track several thousands of particles, you should take a look at the Advanced skills part where we show how to parallelise computations.
+The ``C++`` script is al least 50 times faster than the ``Python`` one. This script should be use when you try to track more than 500-1000 particles because then the ``Python`` script is to long. If you track several thousands of particles, you should take a look at the PSMN part where we show how to parallelise computations.
 
-The ``C++`` function is ``STM.cpp`` and it takes 9 arguments:
+.. warning:: Compilation of C++ code    
+    
+    If you followed the installation process, you have already compiled the C++ code. If not, just do in a terminal
+    
+    .. code-block:: bash
+    
+        cd 4D-ptv/Matching/STMCpp/
+        make
 
-- **inputfile**
-- **maxframes**
-- **cammatch**
-- **maxdistance**
-- **maxmatchesperray**
-- **nx ny nz**
-- **boudingbox** minX maxX minY maxY minZ maxZ
+The ``C++`` function is ``STM`` and it takes 18 arguments:
+
+- **inputfile** (*-i*): Input file,
+- **output dir** (*-o*): Output directory,
+- **frames** (*-f*): number of frames,
+- **mincameras** (*-c*): minimum number of rays for a match,
+- **maxdistance** (*-d*): maximum distance allowed for a match,
+- **multiplematchesperraymindistance** (-s*): minimum allowed distance between matches found for the same ray,
+- **maxmatchesperray** (*-m*): maximum matches per ray,
+- **nx ny nz** (*-x -y -z*): number of voxels in each direction,
+- **boudingbox** (*-b*): bouding box minX maxX minY maxY minZ maxZ.
+
+By defaut, it saves results in a h5 file. 
+
+.. warning:: How to access to ``STM`` documentation?
+    Do in a terminal
+    
+    .. code-block:: bash
+    
+        ./STM -h
 
 .. figure:: Figures/InOutputSTMcpp.png
     :width: 100%
