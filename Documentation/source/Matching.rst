@@ -22,7 +22,7 @@ This step has been written in ``Python`` and in ``C++``. The ``C++`` version is 
 Python way (Depreciated)
 ------------------------
 
-The function which do the matching is ``STM.py``. It takes 11 arguments:
+The function which do the matching is ``stm.py``. It takes 11 arguments:
 
 - **filename**                 : name of the file containing rays,
 - **minframes**                : number of the first frame,
@@ -49,7 +49,7 @@ The function which do the matching is ``STM.py``. It takes 11 arguments:
 
     .. code-block:: bash
 
-        python STM.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 10 2 0.2 400 400 250 2 ## To test !!! Check it !!!!
+        python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 10 2 0.2 400 400 250 2 ## To test !!! Check it !!!!
 
     To open the result file, use in a matlab terminal
 

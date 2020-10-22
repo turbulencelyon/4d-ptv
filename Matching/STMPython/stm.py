@@ -3,7 +3,7 @@
 
 Example::
 
-  python STM.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
+  python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
 
 """
 import socket
@@ -14,7 +14,7 @@ from datetime import datetime
 
 import numpy as np
 
-from STMFunctions import space_traversal_matching
+from stm_util import space_traversal_matching
 
 print(socket.gethostname())
 print("Python", sys.version)
