@@ -1,33 +1,35 @@
 #! /usr/bin/env python
-import time
-import os
+"""
+
+Example::
+
+  python STM.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
+
+"""
 import socket
 import sys
-
-print(socket.gethostname())
-print("Python", sys.version)
-print("curdir =", os.path.realpath(os.curdir))
-sys.path.insert(0, "/home/eberna07/Stage_EB_2020/4d-ptv/Matching/STMPython")
-print(sys.path)
-import STMFunctions as stmf
-import math
-import numpy as np
-import itertools as it
 import copy
 import struct
 from datetime import datetime
+
+import numpy as np
+
+from STMFunctions import space_traversal_matching
+
+print(socket.gethostname())
+print("Python", sys.version)
 
 
 def STM(
     filename,
     minframes,
     maxframes,
-    cammatch,
+    cam_match,
     maxdistance,
     nx,
     ny,
     nz,
-    maxmatchesperray,
+    max_matches_per_ray,
     boundingbox=[[-140, 140], [-150, 150], [5, 170]],
     neighbours=6,
 ):
@@ -38,18 +40,18 @@ def STM(
     #   filename                           # name of the file containing rays
     #   minframes                          # number of the first frame
     #   maxframes                          # number of the last frame
-    #   cammatch                           # minimum number of rays crossing to get a match. We require a match to satisfy cammatchfunc = lambda x: len(x)>=cammatch for the number of cameras (and thus the number of rays)
+    #   cam_match                           # minimum number of rays crossing to get a match. We require a match to satisfy cam_match_func = lambda x: len(x)>=cam_match for the number of cameras (and thus the number of rays)
     #   maxdistance                        # max distance allowed for a match.
     #   nx,ny,nz                           # number of voxels in each direction
-    #   maxmatchesperray                   # number of matches/ray
+    #   max_matches_per_ray                   # number of matches/ray
     #   boundingbox                        # correspond to the volume visualized [[minX,maxX],[minY,maxY],[minZ,maxZ]] ATTENTION Does not work currently -> To DO !!
     #   neighbours                         # number of illuminated voxels: due to noise, when a ray crosses a voxel, it is possible that in reality, the ray crosses a close voxel. neighbours indicates how many neighbours we consider in reality when a ray crosses a voxel. =6 by defaut.
     """
     #############################################################################################################
     # Parameters to adjust
     tstart = datetime.now().timestamp()
-    cammatchfunc = (
-        lambda x: len(x) >= cammatch
+    cam_match_func = (
+        lambda x: len(x) >= cam_match
     )  # We require a match to satisfy this requirement for the number of cameras (and thus the number of rays)
     #############################################################################################################
 
@@ -57,8 +59,9 @@ def STM(
     fileout = ".".join(fileout[0 : len(fileout) - 1])
     filelog = fileout + ".log"
     print(filelog)
-    fileout = fileout.replace("rays", "matched") + "cam{}_{}-{}.dat".format(
-        cammatch, minframes, maxframes
+    fileout = (
+        fileout.replace("rays", "matched")
+        + f"cam{cam_match}_{minframes}-{maxframes}.dat"
     )
 
     fout = open(fileout, "wb")
@@ -67,12 +70,8 @@ def STM(
     numpts = fin.read(4)  # Read 4 bytes header
     while len(numpts) > 0 and frameid < maxframes:  # If something is read
         numpts = struct.unpack("I", numpts)[0]  # Interpret header as 4 byte uint
-        flog = open(filelog, "a")
-        flog.write("#######\n")
-        flog.write(
-            "Frame: " + str(frameid) + "\nNumber of rays: " + str(numpts) + "\n"
-        )
-        flog.close()
+        with open(filelog, "a") as flog:
+            flog.write("#######\nFrame: {frameid}\nNumber of rays: {numpts}\n")
 
         print("Frame:", frameid, ". # of rays:", numpts)
 
@@ -88,13 +87,13 @@ def STM(
             )
         )  # Reshape to 8*N np.arreyreshape converts everything to floats...
         # The actual call
-        output = stmf.SpaceTraversalMatching(
+        output = space_traversal_matching(
             list(raydata),
             boundingbox,
             nx=nx,
             nz=nz,
             ny=ny,
-            cammatchfunc=cammatchfunc,
+            cam_match_func=cam_match_func,
             neighbours=neighbours,
             logfile=filelog,
             maxdistance=maxdistance,
@@ -124,8 +123,6 @@ def STM(
             fout.write(buf)
 
         numpts = fin.read(4)  # Read next header
-        # print("numpts:",numpts)
-        # print("type:",type(numpts))
         frameid += 1
     fout.close()
     fin.close()
@@ -133,7 +130,7 @@ def STM(
 
     elapsed = datetime.now().timestamp() - tstart
     print("Elapsed time:", elapsed)
-    print("Elapsed time/frame:", elapsed / frameid)
+    print("Elapsed time/frame:", elapsed / (frameid - 1))
 
 
 if len(sys.argv) == 10:
@@ -162,7 +159,9 @@ elif len(sys.argv) == 11:
         np.array(sys.argv[10]),
     )
 else:
-    print("Only {} arguments".format(len(sys.argv) - 1))
     print(
-        "There should be an argument with the filename, minframe, maxframe, cammatch, maxdistance, nx, ny, nz, maxmatchesperray, boundingbox(optional)!"
+        f"Only {len(sys.argv) - 1} arguments\n"
+        "There should be an argument with the "
+        "filename, minframe, maxframe, cam_match, maxdistance, nx, ny, nz, "
+        "max_matches_per_ray, boundingbox(optional)!"
     )

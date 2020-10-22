@@ -27,7 +27,7 @@ The function which do the matching is ``STM.py``. It takes 11 arguments:
 - **filename**                 : name of the file containing rays,
 - **minframes**                : number of the first frame,
 - **maxframes**                : number of the last frame,
-- **cammatch**                 : minimum number of crossing rays to get a match,
+- **cam_match**                 : minimum number of crossing rays to get a match,
 - **maxdistance**              : max distance allowed for a match,
 - **nx,ny,nz**                 : number of voxels in each direction,
 - **maxmatchesperray**         : number of matches/ray,
@@ -57,7 +57,7 @@ The function which do the matching is ``STM.py``. It takes 11 arguments:
 
         [matches,other,params] = readmatches("My4DPTVInstallationPath/Documentation/TestData/Processed_DATA/MyExperiment/matched_cam2_1-100.dat")
 
-The function creates in the rays folder a file called *matched_cam{cammatch}_{minframe}-{maxframe}.dat* which contains all matched points. That kind of file can be openned with the function `readmatches.m` which provides 3 arrays:
+The function creates in the rays folder a file called ``matched_cam{cam_match}_{minframe}-{maxframe}.dat`` which contains all matched points. That kind of file can be openned with the function `readmatches.m` which provides 3 arrays:
 
 - **matches** which is a nmatches x 5 matrix [FrameNumber, x, y, z, Error]
 - **other** which is a nmatches x ? matrix [NumberofRaysUsedInMatch, cam0ID,ray0ID,cam1ID,rays1ID,...]
