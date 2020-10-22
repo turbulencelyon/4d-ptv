@@ -6,21 +6,17 @@ Example::
   python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
 
 """
-import socket
 import sys
 import copy
 import struct
-from datetime import datetime
+from time import perf_counter
 
 import numpy as np
 
 from stm_util import space_traversal_matching
 
-print(socket.gethostname())
-print("Python", sys.version)
 
-
-def STM(
+def compute_stm(
     filename,
     minframes,
     maxframes,
@@ -37,19 +33,36 @@ def STM(
     Compute matches from rays projecting them into voxels.
 
     # Parameters
-    #   filename                           # name of the file containing rays
-    #   minframes                          # number of the first frame
-    #   maxframes                          # number of the last frame
-    #   cam_match                           # minimum number of rays crossing to get a match. We require a match to satisfy cam_match_func = lambda x: len(x)>=cam_match for the number of cameras (and thus the number of rays)
-    #   maxdistance                        # max distance allowed for a match.
-    #   nx,ny,nz                           # number of voxels in each direction
-    #   max_matches_per_ray                   # number of matches/ray
-    #   boundingbox                        # correspond to the volume visualized [[minX,maxX],[minY,maxY],[minZ,maxZ]] ATTENTION Does not work currently -> To DO !!
-    #   neighbours                         # number of illuminated voxels: due to noise, when a ray crosses a voxel, it is possible that in reality, the ray crosses a close voxel. neighbours indicates how many neighbours we consider in reality when a ray crosses a voxel. =6 by defaut.
+
+    - filename                           # name of the file containing rays
+    - minframes                          # number of the first frame
+    - maxframes                          # number of the last frame
+    - cam_match
+
+    minimum number of rays crossing to get a match. We require a match to
+    satisfy cam_match_func = lambda x: len(x)>=cam_match for the number of
+    cameras (and thus the number of rays)
+
+
+    - maxdistance                        # max distance allowed for a match.
+    - nx,ny,nz                           # number of voxels in each direction
+    - max_matches_per_ray                # number of matches/ray
+    - boundingbox
+
+    Corresponds to the volume visualized [[minX,maxX],[minY,maxY],[minZ,maxZ]]
+    ATTENTION Does not work currently -> To DO !!
+
+    - neighbours
+
+    Number of illuminated voxels: due to noise, when a ray crosses a voxel, it
+    is possible that in reality, the ray crosses a close voxel. neighbours
+    indicates how many neighbours we consider in reality when a ray crosses a
+    voxel. =6 by defaut.
+
     """
     #############################################################################################################
     # Parameters to adjust
-    tstart = datetime.now().timestamp()
+    tstart = perf_counter()
     cam_match_func = (
         lambda x: len(x) >= cam_match
     )  # We require a match to satisfy this requirement for the number of cameras (and thus the number of rays)
@@ -128,40 +141,47 @@ def STM(
     fin.close()
     print("Finished")
 
-    elapsed = datetime.now().timestamp() - tstart
+    elapsed = perf_counter() - tstart
     print("Elapsed time:", elapsed)
     print("Elapsed time/frame:", elapsed / (frameid - 1))
 
 
-if len(sys.argv) == 10:
-    STM(
-        str(sys.argv[1]),
-        int(sys.argv[2]),
-        int(sys.argv[3]),
-        int(sys.argv[4]),
-        float(sys.argv[5]),
-        int(sys.argv[6]),
-        int(sys.argv[7]),
-        int(sys.argv[8]),
-        int(sys.argv[9]),
-    )
-elif len(sys.argv) == 11:
-    STM(
-        str(sys.argv[1]),
-        int(sys.argv[2]),
-        int(sys.argv[3]),
-        int(sys.argv[4]),
-        float(sys.argv[5]),
-        int(sys.argv[6]),
-        int(sys.argv[7]),
-        int(sys.argv[8]),
-        int(sys.argv[9]),
-        np.array(sys.argv[10]),
-    )
-else:
-    print(
-        f"Only {len(sys.argv) - 1} arguments\n"
-        "There should be an argument with the "
-        "filename, minframe, maxframe, cam_match, maxdistance, nx, ny, nz, "
-        "max_matches_per_ray, boundingbox(optional)!"
-    )
+def main():
+    print(sys.argv)
+
+    if len(sys.argv) == 10:
+        compute_stm(
+            str(sys.argv[1]),
+            int(sys.argv[2]),
+            int(sys.argv[3]),
+            int(sys.argv[4]),
+            float(sys.argv[5]),
+            int(sys.argv[6]),
+            int(sys.argv[7]),
+            int(sys.argv[8]),
+            int(sys.argv[9]),
+        )
+    elif len(sys.argv) == 11:
+        compute_stm(
+            str(sys.argv[1]),
+            int(sys.argv[2]),
+            int(sys.argv[3]),
+            int(sys.argv[4]),
+            float(sys.argv[5]),
+            int(sys.argv[6]),
+            int(sys.argv[7]),
+            int(sys.argv[8]),
+            int(sys.argv[9]),
+            np.array(sys.argv[10]),
+        )
+    else:
+        print(
+            f"Only {len(sys.argv) - 1} arguments\n"
+            "There should be an argument with the "
+            "filename, minframe, maxframe, cam_match, maxdistance, nx, ny, nz,"
+            " max_matches_per_ray, boundingbox(optional)!"
+        )
+
+
+if __name__ == "__main__":
+    main()
