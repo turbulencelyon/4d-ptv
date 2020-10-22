@@ -18,12 +18,16 @@ import numpy as np
 
 def expand_neighbours(p, neighbours):
     "Take a position p and neighbours, create p+n for each n in neighbours"
+    # CProfile points towards this line
     return list(list(map(lambda x, y: x + y, p, k)) for k in neighbours)
 
 
 def expand_all_neighbours(ps, neighbours):
     """Take positions p and neighbours and create p+n for each n in neighbours
-    and for each p"""
+    and for each p
+
+    Note: ~21% of time spent here! (CProfile)
+    """
     return joinlists(list(expand_neighbours(p, neighbours) for p in ps))
 
 
@@ -152,6 +156,11 @@ def closest_point_to_lines2(p, v):
 
 
 def closest_point_to_lines(p, v):
+    """...
+
+    Note: 9% of the time spent here (CProfile)
+    """
+
     if len(p) == 2:
         return closest_point_to_lines2(p, v)
     else:
@@ -178,6 +187,8 @@ def directional_voxel_traversal2(p, v, bounds, logfile=""):
 
     Gives cell-indices back starting from point p and moving in v direction,
     subject two cell-bounds bounds.
+
+    Note: 12% of time spent here (CProfile)
     """
     # p, v, and bounds should be 3 dimensional
     if not len(p) == len(v) == len(bounds) == 3:
@@ -201,19 +212,17 @@ def directional_voxel_traversal2(p, v, bounds, logfile=""):
         return []
 
     direction = list(map(sign, list(v)))
-    relbounds = list(
-        map(lambda a, b: list([i - b for i in a]), list(bounds), list(p))
-    )
+    relbounds = list(map(lambda a, b: [i - b for i in a], list(bounds), list(p)))
     times = list(
         map(
-            lambda a, b: list([special_division(i, b) for i in a]),
+            lambda a, b: [special_division(i, b) for i in a],
             relbounds,
             v,
         )
     )
     times = list(
         map(
-            lambda a, b: list([[i, b, False] for i in a]),
+            lambda a, b: [[i, b, False] for i in a],
             times,
             [0, 1, 2],
         )
@@ -224,8 +233,8 @@ def directional_voxel_traversal2(p, v, bounds, logfile=""):
         else:
             times[i][0][2] = True
     times = joinlists(times)
-    times = list(filter(lambda x: x[0] > 0, times))  # Should be > !
-    times = list(sorted(times, key=lambda x: x[0]))
+    times = filter(lambda x: x[0] > 0, times)  # Should be > !
+    times = sorted(times, key=lambda x: x[0])
     times = list(itertools.takewhile(lambda x: not x[2], times))
     times = list([x[1] for x in times])
     out = [copy(curindex)]
@@ -571,8 +580,8 @@ def space_traversal_matching(
     log_print("# of voxels traversed after expansion:", len(traversed))
     cellfunc = lambda x: x[2]
     # Sort based on cell. Sort is needed before groupby
-    traversed = list(sorted(traversed, key=cellfunc))
-    # Group elements by same cell
+    traversed = sorted(traversed, key=cellfunc)
+    # Group elements by same cell (CProfile points towards this line)
     traversed = [list(g) for k, g in itertools.groupby(traversed, cellfunc)]
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
     # Prune based on number of rays (fast rough filter, cam filter later)
@@ -591,12 +600,10 @@ def space_traversal_matching(
     traversed = list(filter(cam_match_func, traversed))
     log_print("Pruned based on number of cameras:", len(traversed))
     # All combinations between all cameras
-    candidates = copy(
-        list(
-            map(
-                lambda x: list(list(tup) for tup in itertools.product(*x)),
-                traversed,
-            )
+    candidates = list(
+        map(
+            lambda x: list(list(tup) for tup in itertools.product(*x)),
+            traversed,
         )
     )
     candidates = joinlists(candidates)  # Flatten a list of lists to a single list
@@ -609,9 +616,9 @@ def space_traversal_matching(
     # log_print("Computing match position and quality of candidates...")
     newcandidates = []
     for c in candidates:
-        pvdata = list([raydb[tuple(x)] for x in c])
-        pdata = list([x[0] for x in pvdata])
-        vdata = list([x[1] for x in pvdata])
+        pvdata = [raydb[tuple(x)] for x in c]
+        pdata = [x[0] for x in pvdata]
+        vdata = [x[1] for x in pvdata]
         out = closest_point_to_lines(pdata, vdata)
         newcandidates.append([c, list(out[0]), out[1]])
 
