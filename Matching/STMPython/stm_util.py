@@ -11,11 +11,16 @@ import itertools
 from copy import copy
 import datetime
 
+from typing import Tuple
+
 import numpy as np
+
+from transonic import jit
 
 # import scipy.spatial as sps
 
 
+@jit
 def expand_neighbours(p, neighbours):
     "Take a position p and neighbours, create p+n for each n in neighbours"
     # CProfile points towards this line
@@ -28,12 +33,13 @@ def expand_all_neighbours(ps, neighbours):
 
     Note: ~21% of time spent here! (CProfile)
     """
-    return joinlists(list(expand_neighbours(p, neighbours) for p in ps))
+    return joinlists(expand_neighbours(p, neighbours) for p in ps)
 
 
 def joinlists(lst):
     "'Flatten' a list of lists to a single list"
-    return list([value for sublst in lst for value in sublst])
+    # return list(itertools.chain.from_iterable(lst))
+    return [value for sub_list in lst for value in sub_list]
 
 
 def sign(x):
@@ -82,15 +88,17 @@ def uniquify(seq, idfun=None):
     return result
 
 
-def position_sorted(boundaries, n):
+def find_index_bin(boundaries, value):
     """
-    Gives index in which 'bin' the value n will fall with boundaries 'lst', -1
-    = outside lst has to be sorted to make this work properly
+    Gives index in which 'bin' the value value will fall with boundaries 'lst', -1
+    = outside
+
+    `boundaries` has to be sorted to make this work properly
 
     Implemented with O(Log(N)) scaling, basic idea is to reduce by factors of 2
     every time until 1 bin is left
 
-    Greedy: it will take the first bin if the right boundary exactly matches n
+    Greedy: it will take the first bin if the right boundary exactly matches value
     """
 
     lst = list(boundaries)
@@ -98,12 +106,12 @@ def position_sorted(boundaries, n):
     lst[-1] += 10 ** -8
     mn = 0
     mx = len(lst) - 1
-    if lst[mn] <= n <= lst[mx]:
+    if lst[mn] <= value <= lst[mx]:
         while mx - mn > 1:
             # print('min',mn,'max',mx)
             # Banker's rounding but does not matter, still O(Log(N)) scaling
             trial = round((mn + mx) / 2)
-            if n > lst[trial]:
+            if value > lst[trial]:
                 mn = trial
             else:
                 mx = trial
@@ -165,8 +173,8 @@ def closest_point_to_lines(p, v):
         return closest_point_to_lines2(p, v)
     else:
         a = np.array(p)
-        # d = np.array(list(map(normalize,v)))
-        d = np.array(v)  # Assuming v is normalized already
+        # Assuming v is normalized already
+        d = np.array(v)
         length = len(p)
         rhs = np.array([0.0, 0.0, 0.0])
         lhs = length * np.identity(3)
@@ -182,62 +190,69 @@ def closest_point_to_lines(p, v):
         return [sol.tolist(), dists]
 
 
-def directional_voxel_traversal2(p, v, bounds, logfile=""):
+def directional_voxel_traversal2(
+    point, vector_direction, cell_bounds, logfile=""
+):
     """3D dimensional voxel traversal
 
-    Gives cell-indices back starting from point p and moving in v direction,
-    subject two cell-bounds bounds.
+    Gives cell-indices back starting from `point` and moving in the direction
+    given by `vector_direction`, subject two cell_bounds.
 
     Note: 12% of time spent here (CProfile)
     """
-    # p, v, and bounds should be 3 dimensional
-    if not len(p) == len(v) == len(bounds) == 3:
-        print("dimension mismatch!")
+    assert len(point) == len(vector_direction) == len(cell_bounds) == 3
+
+    # point, vector_direction, and cell_bounds should be 3 dimensional
+    if not len(point) == len(vector_direction) == len(cell_bounds) == 3:
+        message = "dimension mismatch!"
         if logfile:
             with open(logfile, "a") as flog:
-                flog.write("dimension mismatch!\n")
-        return []
+                flog.write(message + "\n")
+        raise ValueError(message)
+        # print(message)
+        # return []
 
-    curindex = list(map(position_sorted, bounds, p))
-    if -1 in curindex or vector_norm(v) == 0:
-        text = (
-            "ray starts outside bounds!\np: {p}\nv: {v}\n"
-            "cell index: {cellindex}\n"
+    cell_index_point: Tuple[int, int, int] = tuple(
+        map(find_index_bin, cell_bounds, point)
+    )
+
+    if -1 in cell_index_point or vector_norm(vector_direction) == 0:
+        message = (
+            f"ray starts outside cell_bounds!\np: {point}\n"
+            f"v: {vector_direction}\ncell index: {cell_index_point}\n"
         )
         if logfile:
             with open(logfile, "a") as flog:
-                flog.write(text)
+                flog.write(message)
 
-        print(text)
-        return []
+        raise ValueError(message)
+        # print(message)
+        # return []
 
-    direction = list(map(sign, list(v)))
-    relbounds = list(map(lambda a, b: [i - b for i in a], list(bounds), list(p)))
+    direction = list(map(sign, vector_direction))
+    relative_bounds = list(
+        map(lambda a, b: [i - b for i in a], cell_bounds, point)
+    )
     times = list(
         map(
             lambda a, b: [special_division(i, b) for i in a],
-            relbounds,
-            v,
+            relative_bounds,
+            vector_direction,
         )
     )
-    times = list(
-        map(
-            lambda a, b: [[i, b, False] for i in a],
-            times,
-            [0, 1, 2],
-        )
-    )
-    for i in range(3):
-        if direction[i] == 1:
-            times[i][-1][2] = True
+    times = list(map(lambda a, b: [[i, b, False] for i in a], times, [0, 1, 2]))
+    for index_axe in range(3):
+        if direction[index_axe] == 1:
+            # vector along this axe (x, y or z)
+            times[index_axe][-1][2] = True
         else:
-            times[i][0][2] = True
+            times[index_axe][0][2] = True
     times = joinlists(times)
     times = filter(lambda x: x[0] > 0, times)  # Should be > !
     times = sorted(times, key=lambda x: x[0])
     times = list(itertools.takewhile(lambda x: not x[2], times))
     times = list([x[1] for x in times])
-    out = [copy(curindex)]
+    out = [copy(cell_index_point)]
     for index in times:
         new = list(out[-1])
         new[index] += direction[index]
@@ -245,76 +260,77 @@ def directional_voxel_traversal2(p, v, bounds, logfile=""):
     return out
 
 
-def directional_voxel_traversal(p, v, bounds, logfile=""):
-    """3D dimensional voxel traversal
+# Dead code... Commented for now
+# def directional_voxel_traversal(p, v, bounds, logfile=""):
+#     """3D dimensional voxel traversal
 
-    Gives cell-indices back starting from point p and moving in v direction,
-    subject two cell-bounds bounds
-    """
-    # p, v, and bounds should be 3 dimensional
-    if not len(p) == len(v) == len(bounds) == 3:
-        print("dimension mismatch!")
-        if logfile:
-            with open(logfile, "a") as flog:
-                flog.write("dimension mismatch!\n")
-        return []
+#     Gives cell-indices back starting from point p and moving in v direction,
+#     subject two cell-bounds bounds
+#     """
+#     # p, v, and bounds should be 3 dimensional
+#     if not len(p) == len(v) == len(bounds) == 3:
+#         print("dimension mismatch!")
+#         if logfile:
+#             with open(logfile, "a") as flog:
+#                 flog.write("dimension mismatch!\n")
+#         return []
 
-    curpos = list(p)
-    cellindex = list(map(position_sorted, bounds, p))
-    if -1 in cellindex or vector_norm(v) == 0:
-        text = (
-            "ray starts outside bounds!\np: {p}\nv: {v}\n"
-            "cell index: {cellindex}\n"
-        )
-        if logfile:
-            with open(logfile, "a") as flog:
-                flog.write(text)
+#     curpos = list(p)
+#     cellindex = list(map(find_index_bin, bounds, p))
+#     if -1 in cellindex or vector_norm(v) == 0:
+#         message = (
+#             "ray starts outside bounds!\np: {p}\nv: {v}\n"
+#             "cell index: {cellindex}\n"
+#         )
+#         if logfile:
+#             with open(logfile, "a") as flog:
+#                 flog.write(message)
 
-        print(text)
-        return []
+#         print(message)
+#         return []
 
-    sgns = list(map(sign, v))
-    sgnspart = list(map(lambda x: 1 if x == -1 else 0, sgns))
+#     sgns = list(map(sign, v))
+#     sgnspart = list(map(lambda x: 1 if x == -1 else 0, sgns))
 
-    cont = True
-    steps = 0
-    out = [copy(cellindex)]
-    while cont and steps < 10000:
-        # Steps is just a safety thing for now, can be removed later
-        steps += 1
-        newindices = list(map(lambda x, y: x + y, cellindex, sgns))
-        newbounds = [0, 0, 0]
-        for i in range(3):
-            if 0 <= newindices[i] <= len(bounds[i]) - 1:
-                # Should there be + sgnspart[i] in the middle term?
-                newbounds[i] = bounds[i][newindices[i] + sgnspart[i]]
-            else:
-                # Bounds are at infinity, so the 'next' bounds are infinitely far away
-                newbounds[i] = math.inf
+#     cont = True
+#     steps = 0
+#     out = [copy(cellindex)]
+#     while cont and steps < 10000:
+#         # Steps is just a safety thing for now, can be removed later
+#         steps += 1
+#         newindices = list(map(lambda x, y: x + y, cellindex, sgns))
+#         newbounds = [0, 0, 0]
+#         for i in range(3):
+#             if 0 <= newindices[i] <= len(bounds[i]) - 1:
+#                 # Should there be + sgnspart[i] in the middle term?
+#                 newbounds[i] = bounds[i][newindices[i] + sgnspart[i]]
+#             else:
+#                 # Bounds are at infinity, so the 'next' bounds are infinitely far away
+#                 newbounds[i] = math.inf
 
-        if math.inf not in newbounds:
-            ts = [0, 0, 0]
-            for i in range(3):
-                if v[i] == 0:
-                    ts[i] = math.inf  # It will take infinite amount of time
-                else:
-                    ts[i] = (newbounds[i] - curpos[i]) / v[i]
+#         if math.inf not in newbounds:
+#             ts = [0, 0, 0]
+#             for i in range(3):
+#                 if v[i] == 0:
+#                     ts[i] = math.inf  # It will take infinite amount of time
+#                 else:
+#                     ts[i] = (newbounds[i] - curpos[i]) / v[i]
 
-            # Find the 'times' needed to the next boundaries in each dimensions
-            order = sorted(range(len(ts)), key=lambda k: ts[k])
-            # Find the dimension for which the time is shortest
-            minpos = order[0]
+#             # Find the 'times' needed to the next boundaries in each dimensions
+#             order = sorted(range(len(ts)), key=lambda k: ts[k])
+#             # Find the dimension for which the time is shortest
+#             minpos = order[0]
 
-            cellindex[minpos] += sgns[minpos]
-            ts = ts[minpos]
-            for i in range(3):
-                curpos[i] += v[i] * ts
+#             cellindex[minpos] += sgns[minpos]
+#             ts = ts[minpos]
+#             for i in range(3):
+#                 curpos[i] += v[i] * ts
 
-            out.append(copy(cellindex))
-        else:
-            # print("at edge")
-            cont = False
-    return out
+#             out.append(copy(cellindex))
+#         else:
+#             # print("at edge")
+#             cont = False
+#     return out
 
 
 def at_face(bmin, bmax, hitb):
@@ -323,13 +339,18 @@ def at_face(bmin, bmax, hitb):
 
 def prepare_ray(p, v, bounds):
     """
-    Projects ray (defined by p,v) on to an AABB (axis aligned bounding box).
+    Projects ray (defined by p, v) onto an AABB (axis aligned bounding box).
 
-    [boolhit, boolinside, pnew, v] boolhit tells if it hits AABB, abd
-    boolinside tells if it is projected, and pnew the new position or [] in
-    case it misses.
+    Returns (bool_hit, bool_inside, position, vector_direction)
 
-    Note that ray can be projected on to an AABB with negative 'time'...
+    - bool_hit tells if it hits AABB,
+    - bool_inside tells if it is projected
+    - position: the new position or [] in case it misses.
+    - vector_direction: the normalized vector
+
+    Note that ray can be projected onto an AABB with negative 'time'...
+
+    Note: very quick so no need to optimize.
     """
 
     xmin = bounds[0][0]
@@ -341,10 +362,15 @@ def prepare_ray(p, v, bounds):
     x = p[0]
     y = p[1]
     z = p[2]
-    newv = normalize(v).tolist()  # v is normalized
-    vx, vy, vz = newv
+    vector_direction = normalize(v).tolist()  # v is normalized
+    vx, vy, vz = vector_direction
     if xmin < x < xmax and ymin < y < ymax and zmin < z < zmax:
-        return [True, True, p, newv]  # Return False and original point
+        return [
+            True,
+            True,
+            p,
+            vector_direction,
+        ]  # Return False and original point
     else:
         t = list(
             map(
@@ -378,9 +404,9 @@ def prepare_ray(p, v, bounds):
         # Sort by arrival time (time till hit)
         data = sorted(data, key=lambda x: x[0])
         # Position it hits the plane of first-hit
-        return [True, False, data[0][2], newv]
+        return [True, False, data[0][2], vector_direction]
     else:
-        return [False, False, [], newv]
+        return [False, False, [], vector_direction]
 
 
 def space_traversal_matching(
@@ -486,57 +512,77 @@ def space_traversal_matching(
 
     if logfile:
 
-        def log_print(*out):
+        def log_print(*args):
             with open(logfile, "a") as flog:
-                flog.write(" ".join(map(str, list(out))) + "\n")
+                flog.write(" ".join(map(str, list(args))) + "\n")
 
     else:
 
-        def log_print(*out):
-            print(*out)
+        def log_print(*args):
+            print(*args)
 
     log_print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     bounds = list(
         map(
-            lambda x, n: list(
-                [x[0] + i * (x[1] - x[0]) / n for i in range(n + 1)]
-            ),
+            lambda x, n: [x[0] + i * (x[1] - x[0]) / n for i in range(n + 1)],
             boundingbox,
             [nx, ny, nz],
         )
     )
+
+    bounds_pa = [
+        list(np.linspace(limits[0], limits[1], n + 1))
+        for limits, n in zip(boundingbox, (nx, ny, nz))
+    ]
+
+    assert np.allclose(bounds[0], bounds_pa[0]), (
+        np.array(bounds_pa[0]).dtype,
+        np.array(bounds[0]).dtype,
+    )
+
     for i in range(3):
-        bounds[i][-1] = boundingbox[i][-1]
+        assert bounds[i][-1] == boundingbox[i][-1]
+        assert bounds_pa[i][-1] == boundingbox[i][-1]
 
     log_print("# of cells:", nx * ny * nz)
     rays = list(raydata)
+    print(len(raydata), raydata[0])
 
     # Prepare the rays so that they are inside the box or on the side.
-    cam_marker_func = lambda x: x[0]  # First element is camera ID
-    ray_marker_func = lambda x: x[1]  # Second element is the ray ID
-    # Store a dictionary of (cameraid, rayid): [pos, direction]
+    # First element is camera ID
+    INDEX_CAM = 0
+    # Second element is the ray ID
+    INDEX_RAY = 1
+
+    def cam_marker_func(x):
+        return x[INDEX_CAM]
+
+    def ray_marker_func(x):
+        return x[INDEX_RAY]
+
+    # Store a dictionary of (cameraid, ray_id): [pos, direction]
     raydb = {}
-    validrays = []  # Store the transformed rays
+    valid_rays = []  # Store the transformed rays
     numrays = Counter()  # Store the number of rays per camera
     invalidcounter = Counter()  # Store the number that are invalid
-    for r in rays:
-        camid = cam_marker_func(r)
-        rayid = ray_marker_func(r)
-        numrays[camid] += 1
+    for ray in rays:
+        cam_id = ray[INDEX_CAM]
+        ray_id = ray[INDEX_RAY]
+        numrays[cam_id] += 1
 
-        pp = list(r[2:5])
-        vv = list(r[5:8])
-        out = prepare_ray(pp, vv, boundingbox)
+        pp = list(ray[2:5])
+        vv = list(ray[5:8])
+        bool_hit, bool_inside, position, vector_direction = prepare_ray(
+            pp, vv, boundingbox
+        )
 
-        if out[0]:  # If it does not miss (hit or inside)
-            # Tuple of cam-ray ids
-            raydb[(camid, rayid)] = [out[2], out[3]]
-            # CamID, rayID, bool inside, pnew, v
-            validrays.append([camid, rayid, out[1], out[2], out[3]])
+        if bool_hit:  # If it does not miss (hit or inside)
+            raydb[(cam_id, ray_id)] = [position, vector_direction]
+            valid_rays.append(
+                [cam_id, ray_id, bool_inside, position, vector_direction]
+            )
         else:
-            # # Store in raydb even if it misses the bounding box, mark them
-            # raydb[(camid, rayid)] = [copy(pp), copy(vv),"not used"]
-            invalidcounter[camid] += 1
+            invalidcounter[cam_id] += 1
 
     # for k, v in raydb.items():
     #    print(vector_norm(v[1]))
@@ -555,39 +601,45 @@ def space_traversal_matching(
         )
         return []
 
+    # traversed: List[List[int, int, List[int, int, int]]]
+    # [cam_id, ray_id, cell]
     traversed = []
-    for ray in validrays:
-        if ray[2]:  # Ray is inside, traverse both forward and backward
+    for ray in valid_rays:
+        cam_id, ray_id, bool_inside, position, vector_direction = ray
+        if bool_inside:  # Ray is inside, traverse both forward and backward
             out = directional_voxel_traversal2(
-                list(ray[3]), list(ray[4]), bounds, logfile
+                position, vector_direction, bounds, logfile
             ) + directional_voxel_traversal2(
-                list(ray[3]),
-                list(map(lambda x: -1 * x, ray[4])),
+                position,
+                list(map(lambda x: -1 * x, vector_direction)),
                 bounds,
                 logfile,
             )
         else:  # Ray is at edge, traverse in forward direction only
             out = directional_voxel_traversal2(
-                list(ray[3]), list(ray[4]), bounds, logfile
+                position, vector_direction, bounds, logfile
             )
 
         # Expand in neighbourhood and remove duplicates
-        out = uniquify(expand_all_neighbours(out, neighbours), lambda x: tuple(x))
-        # Creates long list of camid, rayid, cellindex
-        ext = [[ray[0], ray[1], o] for o in out]
+        cells = uniquify(expand_all_neighbours(out, neighbours), lambda x: tuple(x))
+        # Creates long list of cam_id, ray_id, cellindex
+        ext = [[cam_id, ray_id, cell] for cell in cells]
         traversed.extend(ext)  # Pile up these into traversed
 
     log_print("# of voxels traversed after expansion:", len(traversed))
-    cellfunc = lambda x: x[2]
+
+    def cell_func(x):
+        return x[2]
+
     # Sort based on cell. Sort is needed before groupby
-    traversed = sorted(traversed, key=cellfunc)
+    traversed = sorted(traversed, key=cell_func)
     # Group elements by same cell (CProfile points towards this line)
-    traversed = [list(g) for k, g in itertools.groupby(traversed, cellfunc)]
+    traversed = [list(g) for k, g in itertools.groupby(traversed, cell_func)]
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
     # Prune based on number of rays (fast rough filter, cam filter later)
     traversed = list(filter(cam_match_func, traversed))
     log_print("Rough pruned based on number of cameras:", len(traversed))
-    # Remove cellindex, not needed anymore, leave [camid, rayid]
+    # Remove cellindex, not needed anymore, leave [cam_id, ray_id]
     traversed = maplevel(lambda x: [x[0], x[1]], traversed, 2)
     traversed = list(
         map(
@@ -602,8 +654,7 @@ def space_traversal_matching(
     # All combinations between all cameras
     candidates = list(
         map(
-            lambda x: list(list(tup) for tup in itertools.product(*x)),
-            traversed,
+            lambda x: [list(tup) for tup in itertools.product(*x)], traversed,
         )
     )
     candidates = joinlists(candidates)  # Flatten a list of lists to a single list
@@ -636,7 +687,7 @@ def space_traversal_matching(
     # sort by number of cameras then by error
     candidates = sorted(candidates, key=lambda x: (-len(x[0]), x[2]))
     # log_print("Here are upto 9999 of the best matches:")
-    # log_print("Index, [camid rayid ....] Position, Mean square distance")
+    # log_print("Index, [cam_id ray_id ....] Position, Mean square distance")
     # print("num candidates:",len(candidates))
     # for i in range(1,len(candidates),100):
     #    print(i,candidates[i])
@@ -673,6 +724,6 @@ def space_traversal_matching(
         "candidates)",
     )
     # print("Here are the approved matches:")
-    # print("Index, [camid rayid ....] Position, Mean square distance")
+    # print("Index, [cam_id ray_id ....] Position, Mean square distance")
 
     return approvedmatches
