@@ -17,6 +17,27 @@ import numpy as np
 
 USE_UNOPTIMIZED = os.environ.get("STM_PYTHON_USE_UNOPTIMIZED", False)
 
+""" Note: the "unoptimized" code is actually slightly faster than the first
+Python code: 179.5 s versus 184 s, i.e. 2.4 % faster :-)
+
+To be compared to the perf of the C++ code: 8.45 s!
+
+- The old Python code was 21.8 time slower than the optimized C++ one.
+
+- The unoptimized Python code is 21.2 time slower than the optimized C++ one.
+
+Command to launch the C++ code::
+
+  ../STMCpp/STM -i ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat -f 1 -c 2 -d 0.2 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
+
+Command to launch the same computation (?) with Python::
+
+  python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
+
+  STM_PYTHON_USE_UNOPTIMIZED=1 python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
+
+"""
+
 if not USE_UNOPTIMIZED:
     from stm_util import space_traversal_matching
 else:
