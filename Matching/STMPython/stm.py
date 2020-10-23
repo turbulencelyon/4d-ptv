@@ -6,6 +6,7 @@ Example::
   python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
 
 """
+import os
 import sys
 import copy
 import struct
@@ -13,7 +14,14 @@ from time import perf_counter
 
 import numpy as np
 
-from stm_util import space_traversal_matching
+
+USE_UNOPTIMIZED = os.environ.get("STM_PYTHON_USE_UNOPTIMIZED", False)
+
+if not USE_UNOPTIMIZED:
+    from stm_util import space_traversal_matching
+else:
+    print("Using stm_util_unoptimized")
+    from stm_util_unoptimized import space_traversal_matching
 
 
 def compute_stm(
