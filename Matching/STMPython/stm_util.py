@@ -20,13 +20,13 @@ from transonic import jit
 # import scipy.spatial as sps
 
 
-@jit
 def expand_neighbours(p, neighbours):
     "Take a position p and neighbours, create p+n for each n in neighbours"
     # CProfile points towards this line
     return list(list(map(lambda x, y: x + y, p, k)) for k in neighbours)
 
 
+@jit
 def expand_all_neighbours(ps, neighbours):
     """Take positions p and neighbours and create p+n for each n in neighbours
     and for each p
@@ -229,7 +229,8 @@ def directional_voxel_traversal2(
         # print(message)
         # return []
 
-    direction = list(map(sign, vector_direction))
+    # warning perf: next lines -> could be written with a simple loop (for
+    # index_axe in range(3))
     relative_bounds = list(
         map(lambda a, b: [i - b for i in a], cell_bounds, point)
     )
@@ -240,7 +241,9 @@ def directional_voxel_traversal2(
             vector_direction,
         )
     )
+    # warning perf: inhomogeneous list [float, int, bool]
     times = list(map(lambda a, b: [[i, b, False] for i in a], times, [0, 1, 2]))
+    direction = list(map(sign, vector_direction))
     for index_axe in range(3):
         if direction[index_axe] == 1:
             # vector along this axe (x, y or z)
@@ -248,15 +251,16 @@ def directional_voxel_traversal2(
         else:
             times[index_axe][0][2] = True
     times = joinlists(times)
+    # what is 1 element of times here??
     times = filter(lambda x: x[0] > 0, times)  # Should be > !
     times = sorted(times, key=lambda x: x[0])
     times = list(itertools.takewhile(lambda x: not x[2], times))
-    times = list([x[1] for x in times])
+    times = [x[1] for x in times]
     out = [copy(cell_index_point)]
     for index in times:
         new = list(out[-1])
         new[index] += direction[index]
-        out.append(list(new))
+        out.append(tuple(new))
     return out
 
 
@@ -621,7 +625,9 @@ def space_traversal_matching(
             )
 
         # Expand in neighbourhood and remove duplicates
-        cells = uniquify(expand_all_neighbours(out, neighbours), lambda x: tuple(x))
+        cells = uniquify(
+            expand_all_neighbours(out, neighbours), lambda x: tuple(x)
+        )
         # Creates long list of cam_id, ray_id, cellindex
         ext = [[cam_id, ray_id, cell] for cell in cells]
         traversed.extend(ext)  # Pile up these into traversed
@@ -631,7 +637,9 @@ def space_traversal_matching(
     def cell_func(x):
         return x[2]
 
+    # warning perf: this could be rewritten and accelerated with Pythran?
     # Sort based on cell. Sort is needed before groupby
+    # (CProfile points towards this line)
     traversed = sorted(traversed, key=cell_func)
     # Group elements by same cell (CProfile points towards this line)
     traversed = [list(g) for k, g in itertools.groupby(traversed, cell_func)]
@@ -649,18 +657,17 @@ def space_traversal_matching(
     )
     # log_print("Cell index removed and grouped by camera for each cell")
     # Prune based on number of different cameras
-    traversed = list(filter(cam_match_func, traversed))
+    traversed = tuple(filter(cam_match_func, traversed))
     log_print("Pruned based on number of cameras:", len(traversed))
     # All combinations between all cameras
     candidates = list(
-        map(
-            lambda x: [list(tup) for tup in itertools.product(*x)], traversed,
-        )
+        map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed,)
     )
-    candidates = joinlists(candidates)  # Flatten a list of lists to a single list
+    # Flatten a list of lists to a single list
+    candidates = joinlists(candidates)
     log_print("Flattened list of candidates:", len(candidates))
     # Delete duplicates, flattened list as tag
-    candidates = uniquify(candidates, lambda x: tuple(list(joinlists(x))))
+    candidates = uniquify(candidates, lambda x: tuple(joinlists(x)))
     log_print("Duplicate candidates removed:", len(candidates))
     candidates = sorted(candidates)
 
