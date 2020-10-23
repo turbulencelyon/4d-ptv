@@ -163,6 +163,25 @@ def closest_point_to_lines2(p, v):
     return [sol.tolist(), d1.item()]
 
 
+@jit
+def step0(a, d):
+    length = len(a)
+    rhs = np.array([0.0, 0.0, 0.0])
+    lhs = length * np.identity(3)
+    for i in range(length):
+        rhs += a[i] - d[i] * np.dot(a[i], d[i])
+        lhs -= np.outer(d[i], d[i])
+    return lhs, rhs
+
+
+# @jit
+def step1(a, d, sol):
+    dists = list(map(lambda a, d: square_vector_norm(np.cross(sol - a, d)), a, d))
+    dists = vector_norm(dists) * np.sqrt(1 / len(a))
+    dists = dists.item()  # Convert to regular float
+    return [sol.tolist(), dists]
+
+
 def closest_point_to_lines(p, v):
     """...
 
@@ -175,19 +194,26 @@ def closest_point_to_lines(p, v):
         a = np.array(p)
         # Assuming v is normalized already
         d = np.array(v)
-        length = len(p)
-        rhs = np.array([0.0, 0.0, 0.0])
-        lhs = length * np.identity(3)
-        for i in range(length):
-            rhs += a[i] - d[i] * np.dot(a[i], d[i])
-            lhs -= np.outer(d[i], d[i])
+
+        # length = len(p)
+        # rhs = np.array([0.0, 0.0, 0.0])
+        # lhs = length * np.identity(3)
+        # for i in range(length):
+        #     rhs += a[i] - d[i] * np.dot(a[i], d[i])
+        #     lhs -= np.outer(d[i], d[i])
+
+        lhs, rhs = step0(a, d)
+
         sol = np.linalg.solve(lhs, rhs)
-        dists = list(
-            map(lambda a, d: square_vector_norm(np.cross(sol - a, d)), a, d)
-        )
-        dists = vector_norm(dists) * np.sqrt(1 / len(p))
-        dists = dists.item()  # Convert to regular float
-        return [sol.tolist(), dists]
+
+        # dists = list(
+        #     map(lambda a, d: square_vector_norm(np.cross(sol - a, d)), a, d)
+        # )
+        # dists = vector_norm(dists) * np.sqrt(1 / len(a))
+        # dists = dists.item()  # Convert to regular float
+        # return [sol.tolist(), dists]
+
+        return step1(a, d, sol)
 
 
 def directional_voxel_traversal2(
@@ -661,7 +687,10 @@ def space_traversal_matching(
     log_print("Pruned based on number of cameras:", len(traversed))
     # All combinations between all cameras
     candidates = list(
-        map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed,)
+        map(
+            lambda x: [list(tup) for tup in itertools.product(*x)],
+            traversed,
+        )
     )
     # Flatten a list of lists to a single list
     candidates = joinlists(candidates)

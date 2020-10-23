@@ -3,7 +3,8 @@
 
 Example::
 
-  python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
+  export PATH_INPUT_DATA=../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat
+  python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
 
 """
 import os
@@ -28,13 +29,12 @@ To be compared to the perf of the C++ code: 8.45 s!
 
 Command to launch the C++ code::
 
-  ../STMCpp/STM -i ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat -f 1 -c 2 -d 0.2 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
+  ../STMCpp/STM -i $PATH_INPUT_DATA -f 1 -c 2 -d 0.2 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
 
 Command to launch the same computation (?) with Python::
 
-  python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
-
-  STM_PYTHON_USE_UNOPTIMIZED=1 python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 2 2 0.2 400 400 250 2
+  python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
+  STM_PYTHON_USE_UNOPTIMIZED=1 python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
 
 """
 
