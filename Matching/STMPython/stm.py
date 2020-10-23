@@ -3,7 +3,7 @@
 
 Example::
 
-  export PATH_INPUT_DATA=../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat
+  export PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
   python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
 
 """
@@ -171,8 +171,8 @@ def compute_stm(
     print("Finished")
 
     elapsed = perf_counter() - tstart
-    print("Elapsed time:", elapsed)
-    print("Elapsed time/frame:", elapsed / (frameid - 1))
+    print(f"Elapsed time: {elapsed:.2f} s")
+    print(f"Elapsed time/frame: {elapsed / (frameid - 1)} s")
 
 
 def main():

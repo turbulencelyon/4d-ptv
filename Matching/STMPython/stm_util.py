@@ -138,7 +138,7 @@ def normalize(v):
         return v
     return v / norm
 
-
+@jit
 def closest_point_to_lines2(p, v):
     p1 = np.array(p[0])
     p2 = np.array(p[1])
@@ -160,7 +160,7 @@ def closest_point_to_lines2(p, v):
     d1 = vector_norm(np.cross(v1, p1 - sol))
     # # Must be the same as d1 for two lines!
     # d2 = np.linalg.norm(np.cross(sol-p1,sol-p1+v1))/np.linalg.norm(v1)
-    return [sol.tolist(), d1.item()]
+    return sol.tolist(), float(d1)
 
 
 @jit
@@ -174,12 +174,11 @@ def step0(a, d):
     return lhs, rhs
 
 
-# @jit
+@jit
 def step1(a, d, sol):
     dists = list(map(lambda a, d: square_vector_norm(np.cross(sol - a, d)), a, d))
     dists = vector_norm(dists) * np.sqrt(1 / len(a))
-    dists = dists.item()  # Convert to regular float
-    return [sol.tolist(), dists]
+    return sol.tolist(), float(dists)
 
 
 def closest_point_to_lines(p, v):
@@ -194,25 +193,8 @@ def closest_point_to_lines(p, v):
         a = np.array(p)
         # Assuming v is normalized already
         d = np.array(v)
-
-        # length = len(p)
-        # rhs = np.array([0.0, 0.0, 0.0])
-        # lhs = length * np.identity(3)
-        # for i in range(length):
-        #     rhs += a[i] - d[i] * np.dot(a[i], d[i])
-        #     lhs -= np.outer(d[i], d[i])
-
         lhs, rhs = step0(a, d)
-
         sol = np.linalg.solve(lhs, rhs)
-
-        # dists = list(
-        #     map(lambda a, d: square_vector_norm(np.cross(sol - a, d)), a, d)
-        # )
-        # dists = vector_norm(dists) * np.sqrt(1 / len(a))
-        # dists = dists.item()  # Convert to regular float
-        # return [sol.tolist(), dists]
-
         return step1(a, d, sol)
 
 
@@ -545,6 +527,7 @@ def space_traversal_matching(
         def log_print(*args):
             with open(logfile, "a") as flog:
                 flog.write(" ".join(map(str, list(args))) + "\n")
+            print(*args)
 
     else:
 
@@ -576,7 +559,6 @@ def space_traversal_matching(
 
     log_print("# of cells:", nx * ny * nz)
     rays = list(raydata)
-    print(len(raydata), raydata[0])
 
     # Prepare the rays so that they are inside the box or on the side.
     # First element is camera ID
