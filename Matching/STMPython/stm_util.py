@@ -20,6 +20,22 @@ from transonic import jit
 # import scipy.spatial as sps
 
 
+def print_repr_inout(fun):
+    def new_fun(*args, **kwargs):
+        print("\narguments:\n")
+        for arg in args:
+            print(repr(arg), "\n")
+
+        for name, arg in kwargs.items():
+            print(name, ":\n", repr(arg))
+
+        out = fun(*args, **kwargs)
+        print("out\n", repr(out))
+        raise Exception
+
+    return new_fun
+
+
 def expand_neighbours(p, neighbours):
     "Take a position p and neighbours, create p+n for each n in neighbours"
     # CProfile points towards this line
@@ -36,10 +52,10 @@ def expand_all_neighbours(ps, neighbours):
     return joinlists(expand_neighbours(p, neighbours) for p in ps)
 
 
-def joinlists(lst):
+def joinlists(boundaries):
     "'Flatten' a list of lists to a single list"
-    # return list(itertools.chain.from_iterable(lst))
-    return [value for sub_list in lst for value in sub_list]
+    # return list(itertools.chain.from_iterable(boundaries))
+    return [value for sub_list in boundaries for value in sub_list]
 
 
 def sign(x):
@@ -77,20 +93,21 @@ def uniquify(seq, idfun=None):
         def idfun(x):
             return x
 
-    seen = {}
+    seen = set()
     result = []
     for item in seq:
         marker = idfun(item)
         if marker in seen:
             continue
-        seen[marker] = 1
+        seen.add(marker)
         result.append(item)
     return result
 
 
+# @print_repr_inout
 def find_index_bin(boundaries, value):
     """
-    Gives index in which 'bin' the value value will fall with boundaries 'lst', -1
+    Gives index in which 'bin' the value value will fall with boundaries 'boundaries', -1
     = outside
 
     `boundaries` has to be sorted to make this work properly
@@ -100,18 +117,20 @@ def find_index_bin(boundaries, value):
 
     Greedy: it will take the first bin if the right boundary exactly matches value
     """
-
-    lst = list(boundaries)
-    lst[0] -= 10 ** -8
-    lst[-1] += 10 ** -8
     mn = 0
-    mx = len(lst) - 1
-    if lst[mn] <= value <= lst[mx]:
+    mx = len(boundaries) - 1
+    if abs(boundaries[0] - value) < 10 ** -8:
+        return 0
+
+    if abs(boundaries[mn] - value) < 10 ** -8:
+        return mn - 1
+
+    if boundaries[mn] <= value <= boundaries[mx]:
         while mx - mn > 1:
             # print('min',mn,'max',mx)
             # Banker's rounding but does not matter, still O(Log(N)) scaling
             trial = round((mn + mx) / 2)
-            if value > lst[trial]:
+            if value > boundaries[trial]:
                 mn = trial
             else:
                 mx = trial
@@ -137,6 +156,7 @@ def normalize(v):
     if norm == 0:
         return v
     return v / norm
+
 
 @jit
 def closest_point_to_lines2(p, v):
@@ -669,10 +689,7 @@ def space_traversal_matching(
     log_print("Pruned based on number of cameras:", len(traversed))
     # All combinations between all cameras
     candidates = list(
-        map(
-            lambda x: [list(tup) for tup in itertools.product(*x)],
-            traversed,
-        )
+        map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed,)
     )
     # Flatten a list of lists to a single list
     candidates = joinlists(candidates)
