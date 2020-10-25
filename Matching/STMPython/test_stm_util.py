@@ -1,4 +1,10 @@
-from stm_util import expand_all_neighbours
+import numpy as np
+
+from stm_util import (
+    expand_all_neighbours,
+    directional_voxel_traversal2,
+    directional_voxel_traversal3,
+)
 
 
 def test_expand_all_neighbours():
@@ -33,3 +39,33 @@ def test_expand_all_neighbours():
     ]
 
     assert result == attended
+
+
+point = [-106.10770416259766, -107.7845687866211, 95.57333374023438]
+vector_ray = [0.27978962508644883, 0.14909602621096413, 0.9484134861241083]
+
+# fmt: off
+cell_bounds = [
+    [-140., -126., -112., -98., -84., -70., -56., -42., -28.,
+        -14., 0., 14., 28., 42., 56., 70., 84., 98., 112., 126., 140.],
+    [-150., -135., -120., -105., -90., -75., -60., -45., -30.,
+        -15., 0., 15., 30., 45., 60., 75., 90., 105., 120., 135., 150.],
+    [5., 16., 27., 38., 49., 60., 71., 82., 93., 104., 115.,
+        126., 137., 148., 159., 170.]
+]
+attended = [
+    (2, 2, 8), (2, 2, 9), (2, 3, 9), (2, 3, 10), (3, 3, 10), (3, 3, 11),
+    (3, 3, 12), (3, 3, 13), (3, 3, 14)
+]
+# fmt: on
+
+
+def test_directional_voxel_traversal2():
+    out = directional_voxel_traversal2(point, vector_ray, cell_bounds)
+    assert out == attended
+
+
+def test_directional_voxel_traversal3():
+    cell_bounds_arr = [np.array(bounds) for bounds in cell_bounds]
+    out = directional_voxel_traversal3(point, vector_ray, cell_bounds_arr)
+    assert out == attended

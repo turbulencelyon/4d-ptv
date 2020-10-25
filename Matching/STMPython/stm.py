@@ -6,6 +6,10 @@ Example::
   export PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
   python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
 
+For xonsh:
+
+  $PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
+
 """
 import os
 import sys
