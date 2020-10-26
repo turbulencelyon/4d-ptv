@@ -195,10 +195,10 @@ def step0(a, d):
 
 
 @jit
-def step1(a, d, sol):
+def compute_distance(a, d, sol):
     dists = list(map(lambda a, d: square_vector_norm(np.cross(sol - a, d)), a, d))
-    dists = vector_norm(dists) * np.sqrt(1 / len(a))
-    return sol.tolist(), float(dists)
+    distance = vector_norm(dists) * np.sqrt(1 / len(a))
+    return float(distance)
 
 
 def closest_point_to_lines(p, v):
@@ -215,7 +215,7 @@ def closest_point_to_lines(p, v):
         d = np.array(v)
         lhs, rhs = step0(a, d)
         sol = np.linalg.solve(lhs, rhs)
-        return step1(a, d, sol)
+        return sol.tolist(), compute_distance(a, d, sol)
 
 
 def directional_voxel_traversal2(point, vector_ray, cell_bounds, logfile=""):
@@ -332,6 +332,12 @@ def directional_voxel_traversal3(point, vector_ray, cell_bounds, logfile=""):
         # print(message)
         # return []
 
+    return kernel(point, vector_ray, cell_bounds, cell_index_point)
+
+
+@jit
+def kernel(point, vector_ray, cell_bounds, cell_index_point):
+
     times_axes = {}
     for index_axe, bounds_axe in enumerate(cell_bounds):
         relative_bounds = bounds_axe - point[index_axe]
@@ -361,11 +367,13 @@ def directional_voxel_traversal3(point, vector_ray, cell_bounds, logfile=""):
     axes_concat = np.concatenate(axes)
     axes_sorted = axes_concat[times_concat.argsort()]
 
-    out = [copy(cell_index_point)]
+    directions = [sign(component) for component in vector_ray]
+
+    cell = np.array(cell_index_point)
+    out = [tuple(cell)]
     for index_axe in axes_sorted:
-        new = list(out[-1])
-        new[index_axe] += sign(vector_ray[index_axe])
-        out.append(tuple(new))
+        cell[index_axe] += directions[index_axe]
+        out.append(tuple(cell))
 
     # all cells traversed by the ray (sorted by time)
     return out
@@ -724,17 +732,23 @@ def space_traversal_matching(
     # Group elements by same cell (CProfile points towards this line)
     traversed = [list(g) for k, g in itertools.groupby(traversed, cell_func)]
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
+
+    # PA: could be a Dict[cell, (cam_id, ray_id)] ?
+
     # Prune based on number of rays (fast rough filter, cam filter later)
+    # PA: take only groups with at least 2 cameras
     traversed = list(filter(cam_match_func, traversed))
     log_print("Rough pruned based on number of cameras:", len(traversed))
-    # Remove cellindex, not needed anymore, leave [cam_id, ray_id]
+    # Remove cell_index, not needed anymore, leave [cam_id, ray_id]
     traversed = maplevel(lambda x: [x[0], x[1]], traversed, 2)
+    # PA: content of traversed at this point?
     traversed = list(
         map(
             lambda x: [list(g) for k, g in itertools.groupby(x, cam_marker_func)],
             traversed,
         )
     )
+    # PA: content of traversed at this point?
     # log_print("Cell index removed and grouped by camera for each cell")
     # Prune based on number of different cameras
     traversed = tuple(filter(cam_match_func, traversed))
@@ -757,8 +771,8 @@ def space_traversal_matching(
         pvdata = [raydb[tuple(x)] for x in c]
         pdata = [x[0] for x in pvdata]
         vdata = [x[1] for x in pvdata]
-        out = closest_point_to_lines(pdata, vdata)
-        newcandidates.append([c, list(out[0]), out[1]])
+        closest_point, distance = closest_point_to_lines(pdata, vdata)
+        newcandidates.append([c, closest_point, distance])
 
     # hullpts = [[20.0,5.0,165.0],[20.0,10.0,160.0],[20.0,10.0,165.0],[20.0,15.0,160.0],[20.0,15.0,165.0],[20.0,20.0,160.0],[20.0,20.0,165.0],[20.0,25.0,160.0],[20.0,25.0,165.0],[25.0,0.0,165.0],[25.0,0.0,170.0],[25.0,5.0,155.0],[25.0,10.0,155.0],[25.0,15.0,155.0],[25.0,20.0,155.0],[25.0,25.0,155.0],[25.0,25.0,175.0],[25.0,30.0,170.0],[25.0,35.0,155.0],[25.0,35.0,160.0],[30.0,-5.0,170.0],[30.0,0.0,160.0],[30.0,5.0,150.0],[30.0,10.0,150.0],[30.0,15.0,150.0],[30.0,20.0,150.0],[30.0,25.0,150.0],[30.0,25.0,180.0],[30.0,30.0,150.0],[30.0,30.0,180.0],[30.0,35.0,175.0],[30.0,40.0,165.0],[30.0,45.0,155.0],[35.0,-10.0,175.0],[35.0,-5.0,165.0],[35.0,-5.0,180.0],[35.0,0.0,155.0],[35.0,10.0,145.0],[35.0,15.0,145.0],[35.0,20.0,145.0],[35.0,25.0,185.0],[35.0,30.0,185.0],[35.0,35.0,150.0],[35.0,35.0,185.0],[35.0,40.0,180.0],[35.0,45.0,155.0],[35.0,45.0,170.0],[35.0,50.0,160.0],[40.0,-10.0,175.0],[40.0,-10.0,180.0],[40.0,-5.0,165.0],[40.0,0.0,155.0],[40.0,5.0,145.0],[40.0,10.0,145.0],[40.0,15.0,145.0],[40.0,30.0,150.0],[40.0,40.0,180.0],[40.0,45.0,155.0],[40.0,45.0,175.0],[40.0,50.0,160.0],[40.0,50.0,165.0],[45.0,-5.0,175.0],[45.0,0.0,165.0],[45.0,5.0,155.0],[45.0,10.0,150.0],[45.0,15.0,150.0],[45.0,40.0,180.0],[45.0,50.0,160.0],[45.0,50.0,165.0],[50.0,15.0,160.0],[50.0,20.0,160.0],[50.0,25.0,175.0],[50.0,30.0,175.0],[50.0,35.0,175.0],[50.0,45.0,165.0],[55.0,15.0,170.0],[55.0,20.0,170.0],[55.0,25.0,170.0],[55.0,30.0,170.0],[55.0,35.0,170.0],[55.0,40.0,170.0]];
     # delaun = sps.Delaunay(hullpts)  # Define the Delaunay triangulation

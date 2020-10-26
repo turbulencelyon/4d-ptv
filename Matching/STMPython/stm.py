@@ -176,7 +176,7 @@ def compute_stm(
 
     elapsed = perf_counter() - tstart
     print(f"Elapsed time: {elapsed:.2f} s")
-    print(f"Elapsed time/frame: {elapsed / (frameid - 1)} s")
+    print(f"Elapsed time/frame: {elapsed / (frameid - 1):.2f} s")
 
 
 def main():

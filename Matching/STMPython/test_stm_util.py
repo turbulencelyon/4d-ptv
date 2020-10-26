@@ -58,6 +58,7 @@ attended = [
     (3, 3, 12), (3, 3, 13), (3, 3, 14)
 ]
 # fmt: on
+cell_bounds_arr = [np.array(bounds) for bounds in cell_bounds]
 
 
 def test_directional_voxel_traversal2():
@@ -66,6 +67,5 @@ def test_directional_voxel_traversal2():
 
 
 def test_directional_voxel_traversal3():
-    cell_bounds_arr = [np.array(bounds) for bounds in cell_bounds]
     out = directional_voxel_traversal3(point, vector_ray, cell_bounds_arr)
     assert out == attended
