@@ -96,9 +96,13 @@ def compute_stm(
     #############################################################################################################
     # Parameters to adjust
     tstart = perf_counter()
+
+    # We require a match to satisfy this requirement for the number of cameras
+    # (and thus the number of rays)
+
     cam_match_func = (
         lambda x: len(x) >= cam_match
-    )  # We require a match to satisfy this requirement for the number of cameras (and thus the number of rays)
+    )
     #############################################################################################################
 
     fileout = copy.copy(filename).split(".")

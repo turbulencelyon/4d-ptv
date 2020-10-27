@@ -10,6 +10,7 @@ from collections import Counter
 import itertools
 from copy import copy
 import datetime
+import sys
 
 from typing import Tuple
 
@@ -376,6 +377,75 @@ def prepare_ray(p, v, bounds):
         return [False, False, [], vector_ray]
 
 
+# First element is camera ID
+INDEX_CAM = 0
+
+
+def make_ray_database(rays, boundingbox, log_print):
+
+    # Store a dictionary of (cameraid, ray_id): [pos, direction]
+    raydb = {}
+    valid_rays = []  # Store the transformed rays
+    num_rays_per_camera = Counter()  # Store the number of rays per camera
+    invalidcounter = Counter()  # Store the number that are invalid
+
+    # Second element is the ray ID
+    INDEX_RAY = 1
+
+    for ray in rays:
+        cam_id = ray[INDEX_CAM]
+        ray_id = ray[INDEX_RAY]
+        num_rays_per_camera[cam_id] += 1
+
+        pp = list(ray[2:5])
+        vv = list(ray[5:8])
+        bool_hit, bool_inside, position, vector_ray = prepare_ray(
+            pp, vv, boundingbox
+        )
+
+        if bool_hit:  # If it does not miss (hit or inside)
+            raydb[(cam_id, ray_id)] = [position, vector_ray]
+            valid_rays.append([cam_id, ray_id, bool_inside, position, vector_ray])
+        else:
+            invalidcounter[cam_id] += 1
+
+    log_print(
+        "# of rays for each camera:",
+        dict(num_rays_per_camera),
+        "\n# of rays that miss the bounding box:",
+        dict(invalidcounter),
+    )
+
+    return raydb, valid_rays, num_rays_per_camera
+
+
+def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours, logfile):
+    # traversed: List[List[int, int, List[int, int, int]]]
+    # [cam_id, ray_id, cell]
+    traversed = []
+    for ray in valid_rays:
+        cam_id, ray_id, bool_inside, position, vector_ray = ray
+        if bool_inside:  # Ray is inside, traverse both forward and backward
+            out = directional_voxel_traversal(
+                position, vector_ray, bounds, logfile
+            ) + directional_voxel_traversal(
+                position, list(map(lambda x: -x, vector_ray)), bounds, logfile
+            )
+        else:  # Ray is at edge, traverse in forward direction only
+            out = directional_voxel_traversal(
+                position, vector_ray, bounds, logfile
+            )
+
+        # Expand in neighbourhood and remove duplicates
+        cells = expand_all_neighbours_uniq(out, neighbours)
+
+        # Creates long list of cam_id, ray_id, cellindex
+        ext = [[cam_id, ray_id, cell] for cell in cells]
+        traversed.extend(ext)  # Pile up these into traversed
+
+    return traversed
+
+
 def space_traversal_matching(
     raydata,
     boundingbox,
@@ -466,78 +536,23 @@ def space_traversal_matching(
     rays = list(raydata)
 
     # Prepare the rays so that they are inside the box or on the side.
-    # First element is camera ID
-    INDEX_CAM = 0
-    # Second element is the ray ID
-    INDEX_RAY = 1
-
-    def cam_marker_func(x):
-        return x[INDEX_CAM]
-
-    def ray_marker_func(x):
-        return x[INDEX_RAY]
-
-    # Store a dictionary of (cameraid, ray_id): [pos, direction]
-    raydb = {}
-    valid_rays = []  # Store the transformed rays
-    numrays = Counter()  # Store the number of rays per camera
-    invalidcounter = Counter()  # Store the number that are invalid
-    for ray in rays:
-        cam_id = ray[INDEX_CAM]
-        ray_id = ray[INDEX_RAY]
-        numrays[cam_id] += 1
-
-        pp = list(ray[2:5])
-        vv = list(ray[5:8])
-        bool_hit, bool_inside, position, vector_ray = prepare_ray(
-            pp, vv, boundingbox
-        )
-
-        if bool_hit:  # If it does not miss (hit or inside)
-            raydb[(cam_id, ray_id)] = [position, vector_ray]
-            valid_rays.append([cam_id, ray_id, bool_inside, position, vector_ray])
-        else:
-            invalidcounter[cam_id] += 1
-
-    # for k, v in raydb.items():
-    #    print(vector_norm(v[1]))
-
-    log_print(
-        "# of rays for each camera:",
-        dict(numrays),
-        "\n# of rays that miss the bounding box:",
-        dict(invalidcounter),
+    raydb, valid_rays, num_rays_per_camera = make_ray_database(
+        rays, boundingbox, log_print
     )
-    if len(dict(numrays)) > 10:
+
+    if len(dict(num_rays_per_camera)) > 10:
         log_print(
             "# of cameras is large:",
-            len(dict(numrays)),
+            len(dict(num_rays_per_camera)),
             " Double check the input!",
         )
-        return []
+        sys.exit(1)
 
     # traversed: List[List[int, int, List[int, int, int]]]
     # [cam_id, ray_id, cell]
-    traversed = []
-    for ray in valid_rays:
-        cam_id, ray_id, bool_inside, position, vector_ray = ray
-        if bool_inside:  # Ray is inside, traverse both forward and backward
-            out = directional_voxel_traversal(
-                position, vector_ray, bounds, logfile
-            ) + directional_voxel_traversal(
-                position, list(map(lambda x: -x, vector_ray)), bounds, logfile
-            )
-        else:  # Ray is at edge, traverse in forward direction only
-            out = directional_voxel_traversal(
-                position, vector_ray, bounds, logfile
-            )
-
-        # Expand in neighbourhood and remove duplicates
-        cells = expand_all_neighbours_uniq(out, neighbours)
-
-        # Creates long list of cam_id, ray_id, cellindex
-        ext = [[cam_id, ray_id, cell] for cell in cells]
-        traversed.extend(ext)  # Pile up these into traversed
+    traversed = compute_cells_traversed_by_rays(
+        valid_rays, bounds, neighbours, logfile
+    )
 
     log_print("# of voxels traversed after expansion:", len(traversed))
 
@@ -561,6 +576,10 @@ def space_traversal_matching(
     # Remove cell_index, not needed anymore, leave [cam_id, ray_id]
     traversed = maplevel(lambda x: [x[0], x[1]], traversed, 2)
     # PA: content of traversed at this point?
+
+    def cam_marker_func(x):
+        return x[INDEX_CAM]
+
     traversed = list(
         map(
             lambda x: [list(g) for k, g in itertools.groupby(x, cam_marker_func)],
