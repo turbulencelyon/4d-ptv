@@ -11,8 +11,10 @@ import itertools
 from copy import copy
 import datetime
 import sys
+from time import perf_counter
 
 from typing import Tuple
+from pprint import pprint
 
 import numpy as np
 
@@ -446,13 +448,65 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours, logfile):
     return traversed
 
 
+def make_groups_by_cells(traversed, cam_match, log_print):
+    """
+
+    Returns
+    -------
+
+    Sequence[Sequence[(cam_id, ray_id)]]
+
+    We'd like to filter out groups with only n(=cam_match-1=1) camera(s).
+
+    """
+    t_start = perf_counter()
+    print("PA: make_groups_by_cells")
+
+    def cell_func(x):
+        return x[2]
+
+    # warning perf: this could be rewritten and accelerated with Pythran?
+    # Sort based on cell. Sort is needed before groupby
+    # (CProfile points towards this line)
+    traversed = sorted(traversed, key=cell_func)
+    # Group elements by same cell (CProfile points towards this line)
+    traversed = [list(g) for k, g in itertools.groupby(traversed, cell_func)]
+    log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
+
+    # PA: traversed: List[List[List[cam_id, ray_id, cell]]]
+
+    # PA: could be a Dict[cell, (cam_id, ray_id)] ?
+
+    # We require a match to satisfy this requirement for the number of cameras
+    # (and thus the number of rays)
+    def cam_match_func(x):
+        return len(x) >= cam_match
+
+    # Prune based on number of rays (fast rough filter, cam filter later)
+    # PA: take only groups with at least 2 cameras
+    traversed = list(filter(cam_match_func, traversed))
+
+    print("\ngrouped by cell index:\n", traversed[:2])
+
+    log_print("Rough pruned based on number of cameras:", len(traversed))
+    # Remove cell_index, not needed anymore, leave [cam_id, ray_id]
+    traversed = maplevel(lambda x: (x[0], x[1]), traversed, 2)
+    # PA: content of traversed at this point?
+
+    # PA: traversed: List[List[(cam_id, ray_id)]]
+
+    print(f"PA: make_groups_by_cells (byebye) {perf_counter() - t_start:.2f} s")
+
+    return traversed
+
+
 def space_traversal_matching(
     raydata,
     boundingbox,
     nx=75,
     ny=75,
     nz=75,
-    cam_match_func=lambda x: len(x) > 2,
+    cam_match=2,
     max_matches_per_ray=2,
     maxdistance=999.9,
     neighbours=6,
@@ -556,47 +610,54 @@ def space_traversal_matching(
 
     log_print("# of voxels traversed after expansion:", len(traversed))
 
-    def cell_func(x):
-        return x[2]
+    traversed = make_groups_by_cells(traversed, cam_match, log_print)
 
-    # warning perf: this could be rewritten and accelerated with Pythran?
-    # Sort based on cell. Sort is needed before groupby
-    # (CProfile points towards this line)
-    traversed = sorted(traversed, key=cell_func)
-    # Group elements by same cell (CProfile points towards this line)
-    traversed = [list(g) for k, g in itertools.groupby(traversed, cell_func)]
-    log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
-
-    # PA: could be a Dict[cell, (cam_id, ray_id)] ?
-
-    # Prune based on number of rays (fast rough filter, cam filter later)
-    # PA: take only groups with at least 2 cameras
-    traversed = list(filter(cam_match_func, traversed))
-    log_print("Rough pruned based on number of cameras:", len(traversed))
-    # Remove cell_index, not needed anymore, leave [cam_id, ray_id]
-    traversed = maplevel(lambda x: [x[0], x[1]], traversed, 2)
-    # PA: content of traversed at this point?
+    print("\nafter make_groups_by_cells:")
+    pprint(traversed[:100])
 
     def cam_marker_func(x):
         return x[INDEX_CAM]
 
     traversed = list(
         map(
-            lambda x: [list(g) for k, g in itertools.groupby(x, cam_marker_func)],
+            lambda group: [
+                list(g) for k, g in itertools.groupby(group, cam_marker_func)
+            ],
             traversed,
         )
     )
-    # PA: content of traversed at this point?
+
+    print("\ngrouped by INDEX_CAM:")
+    pprint(traversed[:100])
+
     # log_print("Cell index removed and grouped by camera for each cell")
     # Prune based on number of different cameras
+    def cam_match_func(x):
+        return len(x) >= cam_match
+
     traversed = tuple(filter(cam_match_func, traversed))
+
+    # PA: content of traversed at this point?
+    # PA: traversed: Tuple[List[tuple(cam_id, ray_id)]] ?
+
+    print("\nafter filter:")
+    pprint(traversed[:10])
+
     log_print("Pruned based on number of cameras:", len(traversed))
     # All combinations between all cameras
     candidates = list(
         map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed)
     )
+
+    print("\ncandidates (first time):")
+    pprint(candidates[:10])
+
     # Flatten a list of lists to a single list
     candidates = joinlists(candidates)
+
+    print("\ncandidates (after joinlists):")
+    pprint(candidates[:10])
+
     log_print("Flattened list of candidates:", len(candidates))
     # Delete duplicates, flattened list as tag
     candidates = uniquify(candidates, lambda x: tuple(joinlists(x)))

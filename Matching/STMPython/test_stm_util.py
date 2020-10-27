@@ -5,7 +5,11 @@ from stm_util import (
     directional_voxel_traversal,
 )
 
-from stm_util_unoptimized import uniquify, expand_all_neighbours,  directional_voxel_traversal2
+from stm_util_unoptimized import (
+    uniquify,
+    expand_all_neighbours,
+    directional_voxel_traversal2,
+)
 
 
 ps = [(48, 56, 137), (48, 56, 138)]

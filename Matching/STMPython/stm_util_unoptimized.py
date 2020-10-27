@@ -416,12 +416,16 @@ def space_traversal_matching(
     nx=75,
     ny=75,
     nz=75,
-    cam_match_func=lambda x: len(x) > 2,
+    cam_match=2,
     max_matches_per_ray=2,
     maxdistance=999.9,
     neighbours=6,
     logfile="",
 ):
+
+    # We require a match to satisfy this requirement for the number of cameras
+    # (and thus the number of rays)
+    cam_match_func = lambda x: len(x) >= cam_match
 
     if not (
         len(boundingbox) == 3
