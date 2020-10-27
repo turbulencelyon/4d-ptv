@@ -102,7 +102,6 @@ def compute_stm(
     fileout = copy.copy(filename).split(".")
     fileout = ".".join(fileout[0 : len(fileout) - 1])
     filelog = fileout + ".log"
-    print(filelog)
     fileout = (
         fileout.replace("rays", "matched")
         + f"cam{cam_match}_{minframes}-{maxframes}.dat"
@@ -178,7 +177,7 @@ def compute_stm(
 
 
 def main():
-    print(sys.argv)
+    # print(sys.argv)
 
     if len(sys.argv) == 10:
         compute_stm(

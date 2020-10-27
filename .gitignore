@@ -20,3 +20,5 @@ Matching/STMPython/*.dat
 
 *.pstats
 profile.png
+
+**/__pythran__

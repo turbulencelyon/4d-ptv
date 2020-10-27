@@ -17,7 +17,8 @@ from pprint import pprint
 
 import numpy as np
 
-from transonic import jit, Tuple, List, boost
+from transonic import boost, Tuple, List, Array
+from transonic import jit
 
 # import scipy.spatial as sps
 
@@ -38,9 +39,9 @@ def print_repr_inout(fun):
     return new_fun
 
 
-@jit
+@boost
 def expand_all_neighbours_uniq(
-    ps: "(int, int, int) list", neighbours: "int64[:] list"
+    ps: List[Tuple[int, int, int]], neighbours: List[Array[int, "1d"]]
 ):
     """Take positions p and neighbours and create p+n for each n in neighbours
     and for each p
@@ -105,7 +106,6 @@ def uniquify(seq, idfun=None):
     return result
 
 
-# @print_repr_inout
 def find_index_bin(boundaries, value):
     """
     Gives index in which 'bin' the value value will fall with boundaries 'boundaries', -1
@@ -159,8 +159,8 @@ def normalize(v):
     return v / norm
 
 
-@jit
-def closest_point_to_lines2(p, v):
+@boost
+def closest_point_to_lines2(p: List[List[float]], v: List[List[float]]):
     p1 = np.array(p[0])
     p2 = np.array(p[1])
     v1 = np.array(v[0])
@@ -184,8 +184,11 @@ def closest_point_to_lines2(p, v):
     return sol.tolist(), float(d1)
 
 
-@jit
-def prepare_linalg_solve(a, d):
+A2 = "float64[:, :]"
+
+
+@boost
+def prepare_linalg_solve(a: A2, d: A2):
     length = len(a)
     rhs = np.array([0.0, 0.0, 0.0])
     lhs = length * np.identity(3)
@@ -195,8 +198,8 @@ def prepare_linalg_solve(a, d):
     return lhs, rhs
 
 
-@jit
-def compute_distance(a, d, sol):
+@boost
+def compute_distance(a: A2, d: A2, sol: "float64[:]"):
     dists = list(map(lambda a, d: square_vector_norm(np.cross(sol - a, d)), a, d))
     distance = vector_norm(dists) * np.sqrt(1 / len(a))
     return float(distance)
@@ -261,9 +264,12 @@ def directional_voxel_traversal(point, vector_ray, cell_bounds, logfile=""):
     )
 
 
-@jit
+@boost
 def kernel_directional_voxel_traversal(
-    point, vector_ray, cell_bounds, cell_index_point
+    point: List[float],
+    vector_ray: List[float],
+    cell_bounds: List[Array[float, "1d"]],
+    cell_index_point: Tuple[int, int, int],
 ):
 
     times_axes = {}
@@ -441,58 +447,8 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours, logfile):
         cells = expand_all_neighbours_uniq(out, neighbours)
 
         # Creates long list of cam_id, ray_id, cellindex
-        ext = [[cam_id, ray_id, cell] for cell in cells]
-        traversed.extend(ext)  # Pile up these into traversed
-
-    return traversed
-
-
-def make_groups_by_cells(traversed, cam_match: int, log_print=None):
-    """
-
-    Returns
-    -------
-
-    Sequence[Sequence[(cam_id, ray_id)]]
-
-    """
-    t_start = perf_counter()
-    print("PA: make_groups_by_cells")
-
-    def cell_func(x):
-        return x[2]
-
-    # warning perf: this could be rewritten and accelerated with Pythran?
-    # Sort based on cell. Sort is needed before groupby
-    # (CProfile points towards this line)
-    traversed = sorted(traversed, key=cell_func)
-    # Group elements by same cell (CProfile points towards this line)
-    traversed = [list(g) for k, g in itertools.groupby(traversed, cell_func)]
-    log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
-
-    # PA: traversed: List[List[List[cam_id, ray_id, cell]]]
-
-    # PA: could be a Dict[cell, (cam_id, ray_id)] ?
-
-    # We require a match to satisfy this requirement for the number of cameras
-    # (and thus the number of rays)
-    def cam_match_func(x):
-        return len(x) >= cam_match
-
-    # Prune based on number of rays (fast rough filter, cam filter later)
-    # PA: take only groups with at least 2 cameras
-    traversed = list(filter(cam_match_func, traversed))
-
-    print("\ngrouped by cell index:\n", traversed[:2])
-
-    log_print("Rough pruned based on number of cameras:", len(traversed))
-    # Remove cell_index, not needed anymore, leave [cam_id, ray_id]
-    traversed = maplevel(lambda x: (x[0], x[1]), traversed, 2)
-    # PA: content of traversed at this point?
-
-    # PA: traversed: List[List[(cam_id, ray_id)]]
-
-    print(f"PA: make_groups_by_cells (byebye) {perf_counter() - t_start:.2f} s")
+        # and pile up these into traversed
+        traversed.extend([cam_id, ray_id, cell] for cell in cells)
 
     return traversed
 
@@ -514,7 +470,7 @@ def kernel_groups_by_cells(groups: List[List[Tuple[int, int]]], cam_match: int):
     return groups1
 
 
-def make_groups_by_cells_alternative(traversed, cam_match: int, log_print=None):
+def make_groups_by_cells(traversed, cam_match: int, log_print=None):
     """
 
     Inputs
@@ -539,9 +495,6 @@ def make_groups_by_cells_alternative(traversed, cam_match: int, log_print=None):
     print("PA: make_groups_by_cells")
 
     groups = {}
-
-    print(f"PA: create groups with {len(traversed)} elements")
-
     t0 = perf_counter()
 
     # warning perf: this could be rewritten and accelerated with Pythran?
@@ -561,8 +514,6 @@ def make_groups_by_cells_alternative(traversed, cam_match: int, log_print=None):
         groups.append(list(tuple(elem[:2]) for elem in group))
 
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
-
-    pprint(groups[:20])
 
     groups1 = kernel_groups_by_cells(groups, cam_match)
 
@@ -689,10 +640,10 @@ def space_traversal_matching(
 
     log_print("# of voxels traversed after expansion:", len(traversed))
 
-    traversed = make_groups_by_cells_alternative(traversed, cam_match, log_print)
+    traversed = make_groups_by_cells(traversed, cam_match, log_print)
 
     print("\nafter make_groups_by_cells:")
-    pprint(traversed[:100])
+    pprint(traversed[:4])
 
     def cam_marker_func(x):
         return x[INDEX_CAM]
@@ -707,20 +658,10 @@ def space_traversal_matching(
     )
 
     print("\ngrouped by INDEX_CAM:")
-    pprint(traversed[:100])
-
-    # log_print("Cell index removed and grouped by camera for each cell")
-    # Prune based on number of different cameras
-    def cam_match_func(x):
-        return len(x) >= cam_match
-
-    traversed = tuple(filter(cam_match_func, traversed))
+    pprint(traversed[:4])
 
     # PA: content of traversed at this point?
     # PA: traversed: Tuple[List[tuple(cam_id, ray_id)]] ?
-
-    print("\nafter filter:")
-    pprint(traversed[:10])
 
     log_print("Pruned based on number of cameras:", len(traversed))
     # All combinations between all cameras
@@ -729,13 +670,13 @@ def space_traversal_matching(
     )
 
     print("\ncandidates (first time):")
-    pprint(candidates[:10])
+    pprint(candidates[:4])
 
     # Flatten a list of lists to a single list
     candidates = joinlists(candidates)
 
     print("\ncandidates (after joinlists):")
-    pprint(candidates[:10])
+    pprint(candidates[:4])
 
     log_print("Flattened list of candidates:", len(candidates))
     # Delete duplicates, flattened list as tag
