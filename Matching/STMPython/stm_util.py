@@ -52,6 +52,21 @@ def expand_all_neighbours(ps, neighbours):
     return joinlists(expand_neighbours(p, neighbours) for p in ps)
 
 
+@jit
+def expand_all_neighbours_uniq(
+    ps: "(int, int, int) list", neighbours: "int64[:] list"
+):
+    """Take positions p and neighbours and create p+n for each n in neighbours
+    and for each p
+    """
+    result = []
+    for point in ps:
+        for delta in neighbours:
+            result.append(tuple(point + delta))
+
+    return set(result)
+
+
 def joinlists(boundaries):
     "'Flatten' a list of lists to a single list"
     # return list(itertools.chain.from_iterable(boundaries))
@@ -624,6 +639,8 @@ def space_traversal_matching(
             f"a list of triplets: {neighbours}"
         )
 
+    neighbours = [np.array(delta) for delta in neighbours]
+
     if logfile:
 
         def log_print(*args):
@@ -713,9 +730,8 @@ def space_traversal_matching(
             )
 
         # Expand in neighbourhood and remove duplicates
-        cells = uniquify(
-            expand_all_neighbours(out, neighbours), lambda x: tuple(x)
-        )
+        cells = expand_all_neighbours_uniq(out, neighbours)
+
         # Creates long list of cam_id, ray_id, cellindex
         ext = [[cam_id, ray_id, cell] for cell in cells]
         traversed.extend(ext)  # Pile up these into traversed

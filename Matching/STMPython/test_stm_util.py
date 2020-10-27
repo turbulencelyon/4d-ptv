@@ -1,44 +1,52 @@
 import numpy as np
 
 from stm_util import (
-    expand_all_neighbours,
+    expand_all_neighbours_uniq,
     directional_voxel_traversal2,
     directional_voxel_traversal3,
 )
 
+from stm_util_unoptimized import uniquify, expand_all_neighbours
+
+
+ps = [(48, 56, 137), (48, 56, 138)]
+neighbours = [
+    [-1, 0, 0],
+    [0, -1, 0],
+    [0, 0, -1],
+    [0, 0, 1],
+    [0, 1, 0],
+    [1, 0, 0],
+    [0, 0, 0],
+]
+
+attended_out_neighbours = [
+    [47, 56, 137],
+    [48, 55, 137],
+    [48, 56, 136],
+    [48, 56, 138],
+    [48, 57, 137],
+    [49, 56, 137],
+    [48, 56, 137],
+    [47, 56, 138],
+    [48, 55, 138],
+    [48, 56, 139],
+    [48, 57, 138],
+    [49, 56, 138],
+]
+
 
 def test_expand_all_neighbours():
-    ps = [(48, 56, 137), (48, 56, 138)]
-    neighbours = [
-        [-1, 0, 0],
-        [0, -1, 0],
-        [0, 0, -1],
-        [0, 0, 1],
-        [0, 1, 0],
-        [1, 0, 0],
-        [0, 0, 0],
-    ]
+    result = uniquify(expand_all_neighbours(ps, neighbours), lambda x: tuple(x))
+    assert result == attended_out_neighbours
 
-    result = expand_all_neighbours(ps, neighbours)
 
-    attended = [
-        [47, 56, 137],
-        [48, 55, 137],
-        [48, 56, 136],
-        [48, 56, 138],
-        [48, 57, 137],
-        [49, 56, 137],
-        [48, 56, 137],
-        [47, 56, 138],
-        [48, 55, 138],
-        [48, 56, 137],
-        [48, 56, 139],
-        [48, 57, 138],
-        [49, 56, 138],
-        [48, 56, 138],
-    ]
-
-    assert result == attended
+def test_expand_all_neighbours_uniq():
+    neighbours_arrays = [np.array(delta) for delta in neighbours]
+    # ps_arrays = [np.array(point) for point in ps]
+    result = expand_all_neighbours_uniq(ps, neighbours_arrays)
+    tmp = [list(point) for point in result]
+    assert sorted(tmp) == sorted(attended_out_neighbours)
 
 
 point = [-106.10770416259766, -107.7845687866211, 95.57333374023438]
