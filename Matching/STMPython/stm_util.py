@@ -13,12 +13,11 @@ import datetime
 import sys
 from time import perf_counter
 
-from typing import Tuple
 from pprint import pprint
 
 import numpy as np
 
-from transonic import jit
+from transonic import jit, Tuple, List, boost
 
 # import scipy.spatial as sps
 
@@ -448,15 +447,13 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours, logfile):
     return traversed
 
 
-def make_groups_by_cells(traversed, cam_match, log_print):
+def make_groups_by_cells(traversed, cam_match: int, log_print=None):
     """
 
     Returns
     -------
 
     Sequence[Sequence[(cam_id, ray_id)]]
-
-    We'd like to filter out groups with only n(=cam_match-1=1) camera(s).
 
     """
     t_start = perf_counter()
@@ -498,6 +495,86 @@ def make_groups_by_cells(traversed, cam_match, log_print):
     print(f"PA: make_groups_by_cells (byebye) {perf_counter() - t_start:.2f} s")
 
     return traversed
+
+
+@boost
+def kernel_groups_by_cells(groups: List[List[Tuple[int, int]]], cam_match: int):
+
+    groups1 = set()
+
+    for group in groups:
+        if len(group) < cam_match:
+            continue
+        camera_identifiants = set(cam_id for (cam_id, ray_id) in group)
+        if len(camera_identifiants) < cam_match:
+            continue
+
+        groups1.add(tuple(group))
+
+    return groups1
+
+
+def make_groups_by_cells_alternative(traversed, cam_match: int, log_print=None):
+    """
+
+    Inputs
+    ------
+
+    traversed:
+
+      Sequence[(cam_id, ray_id, cell)]
+
+
+    Returns
+    -------
+
+    Sequence[Sequence[(cam_id, ray_id)]]
+
+    Set[Tuple[(cam_id, ray_id)]]
+
+    We'd like to filter out groups with less than ``cam_match`` cameras.
+
+    """
+    t_start = perf_counter()
+    print("PA: make_groups_by_cells")
+
+    groups = {}
+
+    print(f"PA: create groups with {len(traversed)} elements")
+
+    t0 = perf_counter()
+
+    # warning perf: this could be rewritten and accelerated with Pythran?
+    # Sort based on cell. Sort is needed before groupby
+    # (CProfile points towards this line)
+
+    def cell_func(x):
+        return x[2]
+
+    traversed.sort(key=cell_func)
+    # Group elements by same cell (CProfile points towards this line)
+    groups = []
+    for _, group in itertools.groupby(traversed, cell_func):
+        group = tuple(group)
+        if len(group) < cam_match:
+            continue
+        groups.append(list(tuple(elem[:2]) for elem in group))
+
+    log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
+
+    pprint(groups[:20])
+
+    groups1 = kernel_groups_by_cells(groups, cam_match)
+
+    del groups
+
+    print(f"PA # of unique group: {len(groups1)}")
+
+    result = tuple(groups1)
+
+    print(f"PA: make_groups_by_cells (byebye) {perf_counter() - t_start:.2f} s")
+
+    return result
 
 
 def space_traversal_matching(
@@ -608,9 +685,11 @@ def space_traversal_matching(
         valid_rays, bounds, neighbours, logfile
     )
 
+    del bounds, neighbours
+
     log_print("# of voxels traversed after expansion:", len(traversed))
 
-    traversed = make_groups_by_cells(traversed, cam_match, log_print)
+    traversed = make_groups_by_cells_alternative(traversed, cam_match, log_print)
 
     print("\nafter make_groups_by_cells:")
     pprint(traversed[:100])
