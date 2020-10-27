@@ -2,11 +2,10 @@ import numpy as np
 
 from stm_util import (
     expand_all_neighbours_uniq,
-    directional_voxel_traversal2,
-    directional_voxel_traversal3,
+    directional_voxel_traversal,
 )
 
-from stm_util_unoptimized import uniquify, expand_all_neighbours
+from stm_util_unoptimized import uniquify, expand_all_neighbours,  directional_voxel_traversal2
 
 
 ps = [(48, 56, 137), (48, 56, 138)]
@@ -74,6 +73,6 @@ def test_directional_voxel_traversal2():
     assert out == attended
 
 
-def test_directional_voxel_traversal3():
-    out = directional_voxel_traversal3(point, vector_ray, cell_bounds_arr)
+def test_directional_voxel_traversal():
+    out = directional_voxel_traversal(point, vector_ray, cell_bounds_arr)
     assert out == attended

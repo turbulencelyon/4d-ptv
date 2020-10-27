@@ -36,22 +36,6 @@ def print_repr_inout(fun):
     return new_fun
 
 
-def expand_neighbours(p, neighbours):
-    "Take a position p and neighbours, create p+n for each n in neighbours"
-    # CProfile points towards this line
-    return list(list(map(lambda x, y: x + y, p, k)) for k in neighbours)
-
-
-@jit
-def expand_all_neighbours(ps, neighbours):
-    """Take positions p and neighbours and create p+n for each n in neighbours
-    and for each p
-
-    Note: ~21% of time spent here! (CProfile)
-    """
-    return joinlists(expand_neighbours(p, neighbours) for p in ps)
-
-
 @jit
 def expand_all_neighbours_uniq(
     ps: "(int, int, int) list", neighbours: "int64[:] list"
@@ -199,7 +183,7 @@ def closest_point_to_lines2(p, v):
 
 
 @jit
-def step0(a, d):
+def prepare_linalg_solve(a, d):
     length = len(a)
     rhs = np.array([0.0, 0.0, 0.0])
     lhs = length * np.identity(3)
@@ -228,12 +212,12 @@ def closest_point_to_lines(p, v):
         a = np.array(p)
         # Assuming v is normalized already
         d = np.array(v)
-        lhs, rhs = step0(a, d)
+        lhs, rhs = prepare_linalg_solve(a, d)
         sol = np.linalg.solve(lhs, rhs)
         return sol.tolist(), compute_distance(a, d, sol)
 
 
-def directional_voxel_traversal2(point, vector_ray, cell_bounds, logfile=""):
+def directional_voxel_traversal(point, vector_ray, cell_bounds, logfile=""):
     """3D dimensional voxel traversal
 
     Gives cell-indices back starting from `point` and moving in the direction
@@ -270,88 +254,15 @@ def directional_voxel_traversal2(point, vector_ray, cell_bounds, logfile=""):
         # print(message)
         # return []
 
-    # warning perf: next lines -> could be written with a simple loop (for
-    # index_axe in range(3))
-    relative_bounds = list(
-        map(lambda a, b: [i - b for i in a], cell_bounds, point)
+    return kernel_directional_voxel_traversal(
+        point, vector_ray, cell_bounds, cell_index_point
     )
-    times = list(
-        map(
-            lambda a, b: [special_division(i, b) for i in a],
-            relative_bounds,
-            vector_ray,
-        )
-    )
-    # warning perf: inhomogeneous list [float, int, bool]
-    times = list(
-        map(lambda t_, axe: [[i, axe, False] for i in t_], times, [0, 1, 2])
-    )
-    direction = list(map(sign, vector_ray))
-    for index_axe in range(3):
-        if direction[index_axe] == 1:
-            # vector along this axe (x, y or z)
-            times[index_axe][-1][2] = True
-        else:
-            times[index_axe][0][2] = True
-    times = joinlists(times)
-    # what is 1 element of times here??
-    # [[t_, axe, bool]]
-    times = filter(lambda x: x[0] > 0, times)  # Should be > !
-    times = sorted(times, key=lambda x: x[0])
-    times = list(itertools.takewhile(lambda x: not x[2], times))
-    times = [x[1] for x in times]
-    out = [copy(cell_index_point)]
-    for index in times:
-        new = list(out[-1])
-        new[index] += direction[index]
-        out.append(tuple(new))
-
-    # all cells traversed by the ray (sorted by time)
-    return out
-
-
-def directional_voxel_traversal3(point, vector_ray, cell_bounds, logfile=""):
-    """3D dimensional voxel traversal
-
-    Gives cell-indices back starting from `point` and moving in the direction
-    given by `vector_ray`, subject two cell_bounds.
-
-    Note: 12% of time spent here (CProfile)
-    """
-    assert len(point) == len(vector_ray) == len(cell_bounds) == 3
-
-    # point, vector_ray, and cell_bounds should be 3 dimensional
-    if not len(point) == len(vector_ray) == len(cell_bounds) == 3:
-        message = "dimension mismatch!"
-        if logfile:
-            with open(logfile, "a") as flog:
-                flog.write(message + "\n")
-        raise ValueError(message)
-        # print(message)
-        # return []
-
-    cell_index_point: Tuple[int, int, int] = tuple(
-        map(find_index_bin, cell_bounds, point)
-    )
-
-    if -1 in cell_index_point or vector_norm(vector_ray) == 0:
-        message = (
-            f"ray starts outside cell_bounds!\np: {point}\n"
-            f"v: {vector_ray}\ncell index: {cell_index_point}\n"
-        )
-        if logfile:
-            with open(logfile, "a") as flog:
-                flog.write(message)
-
-        raise ValueError(message)
-        # print(message)
-        # return []
-
-    return kernel(point, vector_ray, cell_bounds, cell_index_point)
 
 
 @jit
-def kernel(point, vector_ray, cell_bounds, cell_index_point):
+def kernel_directional_voxel_traversal(
+    point, vector_ray, cell_bounds, cell_index_point
+):
 
     times_axes = {}
     for index_axe, bounds_axe in enumerate(cell_bounds):
@@ -392,79 +303,6 @@ def kernel(point, vector_ray, cell_bounds, cell_index_point):
 
     # all cells traversed by the ray (sorted by time)
     return out
-
-
-# Dead code... Commented for now
-# def directional_voxel_traversal(p, v, bounds, logfile=""):
-#     """3D dimensional voxel traversal
-
-#     Gives cell-indices back starting from point p and moving in v direction,
-#     subject two cell-bounds bounds
-#     """
-#     # p, v, and bounds should be 3 dimensional
-#     if not len(p) == len(v) == len(bounds) == 3:
-#         print("dimension mismatch!")
-#         if logfile:
-#             with open(logfile, "a") as flog:
-#                 flog.write("dimension mismatch!\n")
-#         return []
-
-#     curpos = list(p)
-#     cellindex = list(map(find_index_bin, bounds, p))
-#     if -1 in cellindex or vector_norm(v) == 0:
-#         message = (
-#             "ray starts outside bounds!\np: {p}\nv: {v}\n"
-#             "cell index: {cellindex}\n"
-#         )
-#         if logfile:
-#             with open(logfile, "a") as flog:
-#                 flog.write(message)
-
-#         print(message)
-#         return []
-
-#     sgns = list(map(sign, v))
-#     sgnspart = list(map(lambda x: 1 if x == -1 else 0, sgns))
-
-#     cont = True
-#     steps = 0
-#     out = [copy(cellindex)]
-#     while cont and steps < 10000:
-#         # Steps is just a safety thing for now, can be removed later
-#         steps += 1
-#         newindices = list(map(lambda x, y: x + y, cellindex, sgns))
-#         newbounds = [0, 0, 0]
-#         for i in range(3):
-#             if 0 <= newindices[i] <= len(bounds[i]) - 1:
-#                 # Should there be + sgnspart[i] in the middle term?
-#                 newbounds[i] = bounds[i][newindices[i] + sgnspart[i]]
-#             else:
-#                 # Bounds are at infinity, so the 'next' bounds are infinitely far away
-#                 newbounds[i] = math.inf
-
-#         if math.inf not in newbounds:
-#             ts = [0, 0, 0]
-#             for i in range(3):
-#                 if v[i] == 0:
-#                     ts[i] = math.inf  # It will take infinite amount of time
-#                 else:
-#                     ts[i] = (newbounds[i] - curpos[i]) / v[i]
-
-#             # Find the 'times' needed to the next boundaries in each dimensions
-#             order = sorted(range(len(ts)), key=lambda k: ts[k])
-#             # Find the dimension for which the time is shortest
-#             minpos = order[0]
-
-#             cellindex[minpos] += sgns[minpos]
-#             ts = ts[minpos]
-#             for i in range(3):
-#                 curpos[i] += v[i] * ts
-
-#             out.append(copy(cellindex))
-#         else:
-#             # print("at edge")
-#             cont = False
-#     return out
 
 
 def at_face(bmin, bmax, hitb):
@@ -572,67 +410,32 @@ def space_traversal_matching(
     if neighbours == 0:
         neighbours = [[0, 0, 0]]
     elif neighbours == 6:
+        # fmt: off
         neighbours = [
-            [-1, 0, 0],
-            [0, -1, 0],
-            [0, 0, -1],
-            [0, 0, 1],
-            [0, 1, 0],
-            [1, 0, 0],
-            [0, 0, 0],
+            [-1, 0, 0], [0, -1, 0], [0, 0, -1], [0, 0, 1], [0, 1, 0],
+            [1, 0, 0], [0, 0, 0]
         ]
+        # fmt: on
     elif neighbours == 18:
+        # fmt: off
         neighbours = [
-            [-1, -1, 0],
-            [-1, 0, -1],
-            [-1, 0, 0],
-            [-1, 0, 1],
-            [-1, 1, 0],
-            [0, -1, -1],
-            [0, -1, 0],
-            [0, -1, 1],
-            [0, 0, -1],
-            [0, 0, 1],
-            [0, 1, -1],
-            [0, 1, 0],
-            [0, 1, 1],
-            [1, -1, 0],
-            [1, 0, -1],
-            [1, 0, 0],
-            [1, 0, 1],
-            [1, 1, 0],
-            [0, 0, 0],
+            [-1, -1, 0], [-1, 0, -1], [-1, 0, 0], [-1, 0, 1], [-1, 1, 0],
+            [0, -1, -1], [0, -1, 0], [0, -1, 1], [0, 0, -1], [0, 0, 1],
+            [0, 1, -1], [0, 1, 0], [0, 1, 1], [1, -1, 0], [1, 0, -1],
+            [1, 0, 0], [1, 0, 1], [1, 1, 0], [0, 0, 0]
         ]
+        # fmt: on
     elif neighbours == 26:
+        # fmt: off
         neighbours = [
-            [-1, -1, -1],
-            [-1, -1, 0],
-            [-1, -1, 1],
-            [-1, 0, -1],
-            [-1, 0, 0],
-            [-1, 0, 1],
-            [-1, 1, -1],
-            [-1, 1, 0],
-            [-1, 1, 1],
-            [0, -1, -1],
-            [0, -1, 0],
-            [0, -1, 1],
-            [0, 0, -1],
-            [0, 0, 1],
-            [0, 1, -1],
-            [0, 1, 0],
-            [0, 1, 1],
-            [1, -1, -1],
-            [1, -1, 0],
-            [1, -1, 1],
-            [1, 0, -1],
-            [1, 0, 0],
-            [1, 0, 1],
-            [1, 1, -1],
-            [1, 1, 0],
-            [1, 1, 1],
-            [0, 0, 0],
+            [-1, -1, -1], [-1, -1, 0], [-1, -1, 1], [-1, 0, -1], [-1, 0, 0],
+            [-1, 0, 1], [-1, 1, -1], [-1, 1, 0], [-1, 1, 1], [0, -1, -1],
+            [0, -1, 0], [0, -1, 1], [0, 0, -1], [0, 0, 1], [0, 1, -1],
+            [0, 1, 0], [0, 1, 1], [1, -1, -1], [1, -1, 0], [1, -1, 1],
+            [1, 0, -1], [1, 0, 0], [1, 0, 1], [1, 1, -1], [1, 1, 0],
+            [1, 1, 1], [0, 0, 0]
         ]
+        # fmt: on
     if not isinstance(neighbours, list):
         raise TypeError(
             "Neighbours should be a 0, 6, 18, or 26 or "
@@ -719,13 +522,13 @@ def space_traversal_matching(
     for ray in valid_rays:
         cam_id, ray_id, bool_inside, position, vector_ray = ray
         if bool_inside:  # Ray is inside, traverse both forward and backward
-            out = directional_voxel_traversal3(
+            out = directional_voxel_traversal(
                 position, vector_ray, bounds, logfile
-            ) + directional_voxel_traversal3(
+            ) + directional_voxel_traversal(
                 position, list(map(lambda x: -x, vector_ray)), bounds, logfile
             )
         else:  # Ray is at edge, traverse in forward direction only
-            out = directional_voxel_traversal3(
+            out = directional_voxel_traversal(
                 position, vector_ray, bounds, logfile
             )
 
