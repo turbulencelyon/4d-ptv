@@ -48,20 +48,42 @@ def expand_all_neighbours_uniq(
     """Take positions p and neighbours and create p+n for each n in neighbours
     and for each p
     """
-    hash_table = set()
-    result = []
+
+    nb_points = points.shape[0]
+    nb_neighbours = neighbours.shape[0]
+    big = np.empty((nb_points * nb_neighbours, 3), dtype=np.int32)
 
     for index_point in range(points.shape[0]):
         point = points[index_point]
         for index_delta in range(neighbours.shape[0]):
             delta = neighbours[index_delta]
-            tmp = point + delta
-            tmp_tuple = tuple(tmp)
-            if tmp_tuple not in hash_table:
-                hash_table.add(tmp_tuple)
-                result.append(tmp)
+            big[index_point * nb_neighbours + index_delta, :] = point + delta
 
-    return np.array(result, dtype=np.int32)
+    multiplicator = 2 ** 10
+    assert big.max() < multiplicator
+    as_ints = (
+        multiplicator ** 2 * big[:, 0] + multiplicator * big[:, 1] + big[:, 2]
+    )
+
+    indices = as_ints.argsort()
+    as_ints_sorted = as_ints[indices]
+    big = big[indices, :]
+
+    diffs = np.array(np.diff(as_ints_sorted), bool)
+
+    result = np.empty((diffs.sum()+1, 3), dtype=np.int32)
+
+    index_result = 0
+    result[index_result] = big[0, :]
+    index_result = 1
+
+    for index, diff in enumerate(diffs):
+        if not diff:
+            continue
+        result[index_result] = big[index + 1, :]
+        index_result += 1
+
+    return result
 
 
 def joinlists(boundaries):
@@ -232,36 +254,25 @@ def closest_point_to_lines(p, v):
         return sol.tolist(), compute_distance(a, d, sol)
 
 
-def directional_voxel_traversal(point, vector_ray, cell_bounds, logfile=""):
+def directional_voxel_traversal(point, vector_ray, cell_bounds):
     """3D dimensional voxel traversal
 
     Gives cell-indices back starting from `point` and moving in the direction
     given by `vector_ray`, subject two cell_bounds.
     """
-    assert len(point) == len(vector_ray) == len(cell_bounds) == 3
-
     # point, vector_ray, and cell_bounds should be 3 dimensional
     if not len(point) == len(vector_ray) == len(cell_bounds) == 3:
-        message = "dimension mismatch!"
-        if logfile:
-            with open(logfile, "a") as flog:
-                flog.write(message + "\n")
-        raise ValueError(message)
+        raise ValueError("dimension mismatch!")
 
     cell_index_point: Tuple[int, int, int] = tuple(
         map(find_index_bin, cell_bounds, point)
     )
 
     if -1 in cell_index_point or vector_norm(vector_ray) == 0:
-        message = (
+        raise ValueError(
             f"ray starts outside cell_bounds!\np: {point}\n"
             f"v: {vector_ray}\ncell index: {cell_index_point}\n"
         )
-        if logfile:
-            with open(logfile, "a") as flog:
-                flog.write(message)
-
-        raise ValueError(message)
 
     return kernel_directional_voxel_traversal(
         point, vector_ray, cell_bounds, cell_index_point
@@ -434,7 +445,7 @@ def make_ray_database(rays, boundingbox, log_print):
     return raydb, valid_rays, num_rays_per_camera
 
 
-def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours, logfile):
+def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
 
     print("PA: compute_cells_traversed_by_rays")
     t_start = perf_counter()
@@ -446,21 +457,14 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours, logfile):
         if bool_inside:  # Ray is inside, traverse both forward and backward
             cells_1ray = np.vstack(
                 (
+                    directional_voxel_traversal(position, vector_ray, bounds),
                     directional_voxel_traversal(
-                        position, vector_ray, bounds, logfile
-                    ),
-                    directional_voxel_traversal(
-                        position,
-                        list(map(lambda x: -x, vector_ray)),
-                        bounds,
-                        logfile,
+                        position, list(map(lambda x: -x, vector_ray)), bounds,
                     ),
                 )
             )
         else:  # Ray is at edge, traverse in forward direction only
-            cells_1ray = directional_voxel_traversal(
-                position, vector_ray, bounds, logfile
-            )
+            cells_1ray = directional_voxel_traversal(position, vector_ray, bounds)
 
         # Expand in neighbourhood and remove duplicates
         cells = expand_all_neighbours_uniq(cells_1ray, neighbours)
@@ -588,7 +592,7 @@ def space_traversal_matching(
         sys.exit(1)
 
     cells_all, cam_ray_ids = compute_cells_traversed_by_rays(
-        valid_rays, bounds, neighbours, logfile
+        valid_rays, bounds, neighbours
     )
 
     del bounds, neighbours

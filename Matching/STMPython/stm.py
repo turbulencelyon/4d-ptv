@@ -15,6 +15,7 @@ import os
 import sys
 import copy
 import struct
+import traceback
 from time import perf_counter
 
 import numpy as np
@@ -130,17 +131,24 @@ def compute_stm(
             )
         )  # Reshape to 8*N np.arreyreshape converts everything to floats...
         # The actual call
-        output = space_traversal_matching(
-            list(raydata),
-            boundingbox,
-            nx=nx,
-            nz=nz,
-            ny=ny,
-            cam_match=cam_match,
-            neighbours=neighbours,
-            logfile=filelog,
-            maxdistance=maxdistance,
-        )
+        try:
+            output = space_traversal_matching(
+                list(raydata),
+                boundingbox,
+                nx=nx,
+                nz=nz,
+                ny=ny,
+                cam_match=cam_match,
+                neighbours=neighbours,
+                logfile=filelog,
+                maxdistance=maxdistance,
+            )
+        except ValueError:
+            tb = traceback.format_exc()
+            with open(filelog, "a") as flog:
+                flog.write(tb + "\n")
+
+            raise
 
         # Prepare output
         print("Matches found:", len(output))
