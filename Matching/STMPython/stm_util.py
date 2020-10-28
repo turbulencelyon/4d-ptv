@@ -19,7 +19,7 @@ import numpy as np
 # import scipy.spatial as sps
 
 from transonic import boost, Tuple, List, Array
-# from transonic import jit
+from transonic import jit
 
 from util_groupby import make_groups_by_cell_cam
 
@@ -488,24 +488,34 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
     return np.vstack(cells_all), np.vstack(cam_ray_ids_all)
 
 
-def make_candidates(traversed, raydb, log_print):
+# @jit
+def kernel_make_candidates(traversed):
+    # All combinations between all cameras
+
+    candidates = list(
+        map(lambda x: [tuple(tup) for tup in itertools.product(*x)], traversed)
+    )
+    # Flatten a list of lists to a single list
+
+    candidates = joinlists(candidates)
+
+    return candidates
+
+
+def make_candidates(traversed, candidates0, raydb, log_print):
 
     t_start = perf_counter()
     print("PA: make_candidates")
 
-    # All combinations between all cameras
-    candidates = list(
-        map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed)
-    )
-
-    print("\ncandidates (first time):")
-    pprint(candidates[:4])
-
-    # Flatten a list of lists to a single list
-    candidates = joinlists(candidates)
+    candidates = kernel_make_candidates(traversed)
 
     print("\ncandidates (after joinlists):")
     pprint(candidates[:4])
+
+    print("\ncandidates0 (after joinlists):")
+    pprint(candidates0[:4])
+
+    candidates.extend(candidates0)
 
     log_print("Flattened list of candidates:", len(candidates))
     # Delete duplicates, flattened list as tag
@@ -678,31 +688,18 @@ def space_traversal_matching(
 
     log_print("# of voxels traversed after expansion:", len(cells_all))
 
-    traversed = make_groups_by_cell_cam(cells_all, cam_ray_ids, cam_match)
+    traversed, candidates0 = make_groups_by_cell_cam(
+        cells_all, cam_ray_ids, cam_match
+    )
 
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
 
-    # print("\nafter make_groups_by_cell_cam:")
-    # pprint(traversed[:20])
-
-    # def cam_marker_func(x):
-    #     return x[INDEX_CAM]
-
-    # traversed = list(
-    #     map(
-    #         lambda group: [
-    #             list(g) for k, g in itertools.groupby(group, cam_marker_func)
-    #         ],
-    #         traversed,
-    #     )
-    # )
-
-    print("\ngrouped by INDEX_CAM:")
-    pprint(traversed[:20])
+    print("\nPA: traversed after grouped by:")
+    pprint(traversed[:4])
 
     log_print("Pruned based on number of cameras:", len(traversed))
 
-    candidates = make_candidates(traversed, raydb, log_print)
+    candidates = make_candidates(traversed, candidates0, raydb, log_print)
 
     log_print(
         f"Selecting the best matches with up to {max_matches_per_ray}",

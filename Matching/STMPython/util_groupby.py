@@ -70,6 +70,7 @@ def kernel_make_groups_by_cell_cam(
     cam_ray_ids_sorted: "int32[:, :]", diffs: "bool[:]", cam_match: int
 ):
     groups = []
+    candidates = []
     start_group = 0
     for index, diff in enumerate(diffs):
         if diff:
@@ -82,13 +83,14 @@ def kernel_make_groups_by_cell_cam(
                 nb_cameras = len(set(cam_ids))
                 if nb_cameras >= cam_match:
                     if nb_elems == 2:
-                        # manual group by cam
-                        for_append = [[tuple(group[0])], [tuple(group[1])]]
+                        # we can already compute candidates
+                        candidates.append((tuple(group[0]), tuple(group[1])))
                     else:
-                        for_append = group_by_cam(group)
-                    groups.append(for_append)
+                        groups.append(group_by_cam(group))
             start_group = stop_group
-    return groups
+
+    candidates = list(set(candidates))
+    return groups, candidates
 
 
 def make_groups_by_cell_cam(cells_all, cam_ray_ids, cam_match: int):
@@ -118,7 +120,9 @@ def make_groups_by_cell_cam(cells_all, cam_ray_ids, cam_match: int):
     indices, diffs = special_argsort(cells_all)
     del cells_all
     cam_ray_ids_sorted = cam_ray_ids[indices, :]
-    groups = kernel_make_groups_by_cell_cam(cam_ray_ids_sorted, diffs, cam_match)
+    groups, candidates = kernel_make_groups_by_cell_cam(
+        cam_ray_ids_sorted, diffs, cam_match
+    )
     print(f"PA # of unique group: {len(groups)}")
     print(f"PA: make_groups_by_cell_cam done in {perf_counter() - t_start:.2f} s")
-    return groups
+    return groups, candidates
