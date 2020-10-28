@@ -22,7 +22,7 @@ import numpy as np
 from transonic import boost, Tuple, List, Array
 from transonic import jit
 
-from util_group_by_cells import make_groups_by_cells
+from util_groupby import make_groups_by_cell_cam
 
 
 def print_repr_inout(fun):
@@ -71,7 +71,7 @@ def expand_all_neighbours_uniq(
 
     diffs = np.array(np.diff(as_ints_sorted), bool)
 
-    result = np.empty((diffs.sum()+1, 3), dtype=np.int32)
+    result = np.empty((diffs.sum() + 1, 3), dtype=np.int32)
 
     index_result = 0
     result[index_result] = big[0, :]
@@ -489,6 +489,86 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
     return np.vstack(cells_all), np.vstack(cam_ray_ids_all)
 
 
+def make_candidates(traversed, raydb, log_print):
+
+    t_start = perf_counter()
+    print("PA: make_candidates")
+
+    # All combinations between all cameras
+    candidates = list(
+        map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed)
+    )
+
+    print("\ncandidates (first time):")
+    pprint(candidates[:4])
+
+    # Flatten a list of lists to a single list
+    candidates = joinlists(candidates)
+
+    print("\ncandidates (after joinlists):")
+    pprint(candidates[:4])
+
+    log_print("Flattened list of candidates:", len(candidates))
+    # Delete duplicates, flattened list as tag
+    candidates = uniquify(candidates, lambda x: tuple(joinlists(x)))
+    log_print("Duplicate candidates removed:", len(candidates))
+    candidates = sorted(candidates)
+
+    # log_print("Computing match position and quality of candidates...")
+    newcandidates = []
+    for c in candidates:
+        pvdata = [raydb[tuple(x)] for x in c]
+        pdata = [x[0] for x in pvdata]
+        vdata = [x[1] for x in pvdata]
+        closest_point, distance = closest_point_to_lines(pdata, vdata)
+        newcandidates.append([c, closest_point, distance])
+
+    # hullpts = [[20.0,5.0,165.0],[20.0,10.0,160.0],[20.0,10.0,165.0],[20.0,15.0,160.0],[20.0,15.0,165.0],[20.0,20.0,160.0],[20.0,20.0,165.0],[20.0,25.0,160.0],[20.0,25.0,165.0],[25.0,0.0,165.0],[25.0,0.0,170.0],[25.0,5.0,155.0],[25.0,10.0,155.0],[25.0,15.0,155.0],[25.0,20.0,155.0],[25.0,25.0,155.0],[25.0,25.0,175.0],[25.0,30.0,170.0],[25.0,35.0,155.0],[25.0,35.0,160.0],[30.0,-5.0,170.0],[30.0,0.0,160.0],[30.0,5.0,150.0],[30.0,10.0,150.0],[30.0,15.0,150.0],[30.0,20.0,150.0],[30.0,25.0,150.0],[30.0,25.0,180.0],[30.0,30.0,150.0],[30.0,30.0,180.0],[30.0,35.0,175.0],[30.0,40.0,165.0],[30.0,45.0,155.0],[35.0,-10.0,175.0],[35.0,-5.0,165.0],[35.0,-5.0,180.0],[35.0,0.0,155.0],[35.0,10.0,145.0],[35.0,15.0,145.0],[35.0,20.0,145.0],[35.0,25.0,185.0],[35.0,30.0,185.0],[35.0,35.0,150.0],[35.0,35.0,185.0],[35.0,40.0,180.0],[35.0,45.0,155.0],[35.0,45.0,170.0],[35.0,50.0,160.0],[40.0,-10.0,175.0],[40.0,-10.0,180.0],[40.0,-5.0,165.0],[40.0,0.0,155.0],[40.0,5.0,145.0],[40.0,10.0,145.0],[40.0,15.0,145.0],[40.0,30.0,150.0],[40.0,40.0,180.0],[40.0,45.0,155.0],[40.0,45.0,175.0],[40.0,50.0,160.0],[40.0,50.0,165.0],[45.0,-5.0,175.0],[45.0,0.0,165.0],[45.0,5.0,155.0],[45.0,10.0,150.0],[45.0,15.0,150.0],[45.0,40.0,180.0],[45.0,50.0,160.0],[45.0,50.0,165.0],[50.0,15.0,160.0],[50.0,20.0,160.0],[50.0,25.0,175.0],[50.0,30.0,175.0],[50.0,35.0,175.0],[50.0,45.0,165.0],[55.0,15.0,170.0],[55.0,20.0,170.0],[55.0,25.0,170.0],[55.0,30.0,170.0],[55.0,35.0,170.0],[55.0,40.0,170.0]];
+    # delaun = sps.Delaunay(hullpts)  # Define the Delaunay triangulation
+    # inq = delaun.find_simplex([x[1] for x in newcandidates])>0
+    # inq = inq.tolist();
+    # print(inq)
+    # print(type(inq))
+    # newcandidates = list(map(lambda x,y: x + [y],newcandidates,inq))
+
+    candidates = newcandidates
+    # log_print("Sorting candidate matches by quality of match...")
+    # sort by number of cameras then by error
+    candidates = sorted(candidates, key=lambda x: (-len(x[0]), x[2]))
+    # log_print("Here are upto 9999 of the best matches:")
+    # log_print("Index, [cam_id ray_id ....] Position, Mean square distance")
+    # print("num candidates:",len(candidates))
+    # for i in range(1,len(candidates),100):
+    #    print(i,candidates[i])
+
+    print(f"PA: make_candidates done in {perf_counter() - t_start:.2f} s")
+
+    return candidates
+
+
+def make_approved_matches(candidates, maxdistance, max_matches_per_ray):
+    t_start = perf_counter()
+    print(f"PA: make_approved_matches", end="")
+    approved_matches = []  # Store approved candidates
+    matchcounter = Counter()  # Keep track of how many they are matched
+    for cand in candidates:
+        if cand[2] < maxdistance:
+            valid = True
+            for idpair in cand[0]:
+                if matchcounter[tuple(idpair)] >= max_matches_per_ray:
+                    valid = False
+                    break
+            if valid:
+                for idpair in cand[0]:
+                    matchcounter[tuple(idpair)] += 1
+
+                approved_matches.append(list(cand))
+
+    print(f" (done in {perf_counter() - t_start:.2f} s)")
+
+    return approved_matches
+
+
 def space_traversal_matching(
     raydata,
     boundingbox,
@@ -599,77 +679,31 @@ def space_traversal_matching(
 
     log_print("# of voxels traversed after expansion:", len(cells_all))
 
-    traversed = make_groups_by_cells(cells_all, cam_ray_ids, cam_match, log_print)
+    traversed = make_groups_by_cell_cam(cells_all, cam_ray_ids, cam_match)
 
-    print("\nafter make_groups_by_cells:")
-    pprint(traversed[:4])
+    log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
 
-    def cam_marker_func(x):
-        return x[INDEX_CAM]
+    # print("\nafter make_groups_by_cell_cam:")
+    # pprint(traversed[:20])
 
-    traversed = list(
-        map(
-            lambda group: [
-                list(g) for k, g in itertools.groupby(group, cam_marker_func)
-            ],
-            traversed,
-        )
-    )
+    # def cam_marker_func(x):
+    #     return x[INDEX_CAM]
+
+    # traversed = list(
+    #     map(
+    #         lambda group: [
+    #             list(g) for k, g in itertools.groupby(group, cam_marker_func)
+    #         ],
+    #         traversed,
+    #     )
+    # )
 
     print("\ngrouped by INDEX_CAM:")
-    pprint(traversed[:4])
-
-    # PA: content of traversed at this point?
-    # PA: traversed: Tuple[List[tuple(cam_id, ray_id)]] ?
+    pprint(traversed[:20])
 
     log_print("Pruned based on number of cameras:", len(traversed))
-    # All combinations between all cameras
-    candidates = list(
-        map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed)
-    )
 
-    print("\ncandidates (first time):")
-    pprint(candidates[:4])
-
-    # Flatten a list of lists to a single list
-    candidates = joinlists(candidates)
-
-    print("\ncandidates (after joinlists):")
-    pprint(candidates[:4])
-
-    log_print("Flattened list of candidates:", len(candidates))
-    # Delete duplicates, flattened list as tag
-    candidates = uniquify(candidates, lambda x: tuple(joinlists(x)))
-    log_print("Duplicate candidates removed:", len(candidates))
-    candidates = sorted(candidates)
-
-    # log_print("Computing match position and quality of candidates...")
-    newcandidates = []
-    for c in candidates:
-        pvdata = [raydb[tuple(x)] for x in c]
-        pdata = [x[0] for x in pvdata]
-        vdata = [x[1] for x in pvdata]
-        closest_point, distance = closest_point_to_lines(pdata, vdata)
-        newcandidates.append([c, closest_point, distance])
-
-    # hullpts = [[20.0,5.0,165.0],[20.0,10.0,160.0],[20.0,10.0,165.0],[20.0,15.0,160.0],[20.0,15.0,165.0],[20.0,20.0,160.0],[20.0,20.0,165.0],[20.0,25.0,160.0],[20.0,25.0,165.0],[25.0,0.0,165.0],[25.0,0.0,170.0],[25.0,5.0,155.0],[25.0,10.0,155.0],[25.0,15.0,155.0],[25.0,20.0,155.0],[25.0,25.0,155.0],[25.0,25.0,175.0],[25.0,30.0,170.0],[25.0,35.0,155.0],[25.0,35.0,160.0],[30.0,-5.0,170.0],[30.0,0.0,160.0],[30.0,5.0,150.0],[30.0,10.0,150.0],[30.0,15.0,150.0],[30.0,20.0,150.0],[30.0,25.0,150.0],[30.0,25.0,180.0],[30.0,30.0,150.0],[30.0,30.0,180.0],[30.0,35.0,175.0],[30.0,40.0,165.0],[30.0,45.0,155.0],[35.0,-10.0,175.0],[35.0,-5.0,165.0],[35.0,-5.0,180.0],[35.0,0.0,155.0],[35.0,10.0,145.0],[35.0,15.0,145.0],[35.0,20.0,145.0],[35.0,25.0,185.0],[35.0,30.0,185.0],[35.0,35.0,150.0],[35.0,35.0,185.0],[35.0,40.0,180.0],[35.0,45.0,155.0],[35.0,45.0,170.0],[35.0,50.0,160.0],[40.0,-10.0,175.0],[40.0,-10.0,180.0],[40.0,-5.0,165.0],[40.0,0.0,155.0],[40.0,5.0,145.0],[40.0,10.0,145.0],[40.0,15.0,145.0],[40.0,30.0,150.0],[40.0,40.0,180.0],[40.0,45.0,155.0],[40.0,45.0,175.0],[40.0,50.0,160.0],[40.0,50.0,165.0],[45.0,-5.0,175.0],[45.0,0.0,165.0],[45.0,5.0,155.0],[45.0,10.0,150.0],[45.0,15.0,150.0],[45.0,40.0,180.0],[45.0,50.0,160.0],[45.0,50.0,165.0],[50.0,15.0,160.0],[50.0,20.0,160.0],[50.0,25.0,175.0],[50.0,30.0,175.0],[50.0,35.0,175.0],[50.0,45.0,165.0],[55.0,15.0,170.0],[55.0,20.0,170.0],[55.0,25.0,170.0],[55.0,30.0,170.0],[55.0,35.0,170.0],[55.0,40.0,170.0]];
-    # delaun = sps.Delaunay(hullpts)  # Define the Delaunay triangulation
-    # inq = delaun.find_simplex([x[1] for x in newcandidates])>0
-    # inq = inq.tolist();
-    # print(inq)
-    # print(type(inq))
-    # newcandidates = list(map(lambda x,y: x + [y],newcandidates,inq))
-
-    candidates = copy(newcandidates)
-    del newcandidates
-    # log_print("Sorting candidate matches by quality of match...")
-    # sort by number of cameras then by error
-    candidates = sorted(candidates, key=lambda x: (-len(x[0]), x[2]))
-    # log_print("Here are upto 9999 of the best matches:")
-    # log_print("Index, [cam_id ray_id ....] Position, Mean square distance")
-    # print("num candidates:",len(candidates))
-    # for i in range(1,len(candidates),100):
-    #    print(i,candidates[i])
+    candidates = make_candidates(traversed, raydb, log_print)
 
     log_print(
         f"Selecting the best matches with up to {max_matches_per_ray}",
@@ -679,25 +713,13 @@ def space_traversal_matching(
     # now we want to pick the best matches first and match each ray at most
     # max_matches_per_ray
 
-    approvedmatches = []  # Store approved candidates
-    matchcounter = Counter()  # Keep track of how many they are matched
-    for cand in candidates:
-        if cand[2] < maxdistance:
-            valid = True
-            for idpair in cand[0]:
-                if matchcounter[tuple(idpair)] >= max_matches_per_ray:
-                    valid = False
-                    # print(idpair,"has been matched already",max_matches_per_ray,"time(s)")
-                    break
-            if valid:
-                for idpair in cand[0]:
-                    matchcounter[tuple(idpair)] += 1
-
-                approvedmatches.append(list(cand))
+    approved_matches = make_approved_matches(
+        candidates, maxdistance, max_matches_per_ray
+    )
 
     log_print(
         "Selecting done.",
-        len(approvedmatches),
+        len(approved_matches),
         "matched found (out of",
         len(candidates),
         "candidates)",
@@ -705,4 +727,4 @@ def space_traversal_matching(
     # print("Here are the approved matches:")
     # print("Index, [cam_id ray_id ....] Position, Mean square distance")
 
-    return approvedmatches
+    return approved_matches

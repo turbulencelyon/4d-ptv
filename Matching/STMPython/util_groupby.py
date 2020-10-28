@@ -34,8 +34,46 @@ def special_argsort(cells: "int32[:,:]"):
     return indices, np.array(np.diff(cells_as_ints_sorted), dtype=np.bool)
 
 
+def group_by_cam(group):
+    """
+
+
+    """
+    nb_elems = group.shape[0]
+    assert nb_elems >= 2
+    if nb_elems == 2:
+        result = [[tuple(group[0])], [tuple(group[1])]]
+    else:
+
+        elems = list(tuple(group[index, :]) for index in range(group.shape[0]))
+
+        # elems.sort(key=lambda elem: elem[0])
+        cam_id_array = np.array([group[index, 0] for index in range(group.shape[0])])
+        indices = cam_id_array.argsort()
+        elems = [elems[index] for index in indices]
+
+        result = []
+        elem = elems[0]
+        cam_id_old = elem[0]
+        subgroup = [elem]
+
+        for elem in elems[1:]:
+            cam_id = elem[0]
+            if cam_id != cam_id_old:
+                result.append(subgroup)
+                cam_id_old = cam_id
+                subgroup = [elem]
+            else:
+                subgroup.append(elem)
+
+        if subgroup != result[-1]:
+            result.append(subgroup)
+
+    return result
+
+
 @boost
-def kernel_make_groups_by_cells(
+def kernel_make_groups_by_cell_cam(
     cam_ray_ids_sorted: "int32[:, :]", diffs: "bool[:]", cam_match: int
 ):
 
@@ -50,17 +88,12 @@ def kernel_make_groups_by_cells(
                 cam_ids = group[:, 0]
                 nb_cameras = len(set(cam_ids))
                 if nb_cameras >= cam_match:
-                    groups.append(
-                        tuple(
-                            tuple(group[index, :])
-                            for index in range(group.shape[0])
-                        )
-                    )
+                    groups.append(group_by_cam(group))
             start_group = stop_group
     return groups
 
 
-def make_groups_by_cells(cells_all, cam_ray_ids, cam_match: int, log_print=None):
+def make_groups_by_cell_cam(cells_all, cam_ray_ids, cam_match: int):
     """
 
     Inputs
@@ -82,40 +115,12 @@ def make_groups_by_cells(cells_all, cam_ray_ids, cam_match: int, log_print=None)
 
     """
     t_start = perf_counter()
-    print("PA: make_groups_by_cells")
-    log_print(
-        "Sorted and grouped by cell index. # of groups:", cells_all.shape[0]
-    )
+    print("PA: make_groups_by_cell_cam")
 
     indices, diffs = special_argsort(cells_all)
-
     del cells_all
-
     cam_ray_ids_sorted = cam_ray_ids[indices, :]
-
-    groups = kernel_make_groups_by_cells(cam_ray_ids_sorted, diffs, cam_match)
-
+    groups = kernel_make_groups_by_cell_cam(cam_ray_ids_sorted, diffs, cam_match)
     print(f"PA # of unique group: {len(groups)}")
-
-    result = tuple(groups)
-
-    print(f"PA: make_groups_by_cells done in {perf_counter() - t_start:.2f} s")
-
-    return result
-
-
-if __name__ == "__main__":
-
-    cam_ray_ids = np.array([[2, 0], [1, 3], [3, 1], [0, 2]])
-
-    cells = np.array(
-        [[1000, 2, 3], [0, 5, 2], [1, 4, 5], [0, 5, 2]], dtype=np.int16
-    )
-
-    indices, diffs = special_argsort(cells)
-
-    del cells
-
-    cam_ray_ids_sorted = cam_ray_ids[indices, :]
-
-    groups = kernel_make_groups_by_cells(cam_ray_ids_sorted, diffs, cam_match=2)
+    print(f"PA: make_groups_by_cell_cam done in {perf_counter() - t_start:.2f} s")
+    return groups

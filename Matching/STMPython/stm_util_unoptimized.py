@@ -10,6 +10,7 @@ from collections import Counter
 import itertools
 from copy import copy
 import datetime
+from pprint import pprint
 
 from typing import Tuple
 
@@ -520,6 +521,7 @@ def space_traversal_matching(
         def log_print(*args):
             with open(logfile, "a") as flog:
                 flog.write(" ".join(map(str, list(args))) + "\n")
+            print(*args)
 
     else:
 
@@ -648,6 +650,10 @@ def space_traversal_matching(
     # Prune based on number of rays (fast rough filter, cam filter later)
     traversed = list(filter(cam_match_func, traversed))
     log_print("Rough pruned based on number of cameras:", len(traversed))
+
+    print("\nafter make_groups_by_cell_cam:")
+    pprint(traversed[:20])
+
     # Remove cellindex, not needed anymore, leave [cam_id, ray_id]
     traversed = maplevel(lambda x: [x[0], x[1]], traversed, 2)
     traversed = list(
@@ -659,6 +665,10 @@ def space_traversal_matching(
     # log_print("Cell index removed and grouped by camera for each cell")
     # Prune based on number of different cameras
     traversed = tuple(filter(cam_match_func, traversed))
+
+    print("\nafter maplevel & groupby cam_marker_func:")
+    pprint(traversed[:20])
+
     log_print("Pruned based on number of cameras:", len(traversed))
     # All combinations between all cameras
     candidates = list(
