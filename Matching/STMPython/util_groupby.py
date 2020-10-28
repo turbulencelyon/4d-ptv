@@ -1,4 +1,5 @@
 # from pprint import pprint
+import itertools
 
 import numpy as np
 
@@ -40,7 +41,9 @@ def group_by_cam(group):
 
     elems = list(tuple(group[index, :]) for index in range(group.shape[0]))
 
+    # no supported by Pythran
     # elems.sort(key=lambda elem: elem[0])
+    # replaced by:
     cam_id_array = np.array([group[index, 0] for index in range(group.shape[0])])
     indices = cam_id_array.argsort()
     elems = [elems[index] for index in indices]
@@ -86,7 +89,31 @@ def kernel_make_groups_by_cell_cam(
                         # we can already compute candidates
                         candidates.append((tuple(group[0]), tuple(group[1])))
                     else:
-                        groups.append(group_by_cam(group))
+                        groups_cam = group_by_cam(group)
+                        assert len(groups_cam) == nb_cameras
+                        if nb_cameras == 2:
+                            candidates.extend(
+                                [
+                                    tuple(tup)
+                                    for tup in itertools.product(
+                                        groups_cam[0], groups_cam[1]
+                                    )
+                                ]
+                            )
+                        # no supported by Pythran?
+                        # elif nb_cameras == 3:
+                        #     candidates.extend(
+                        #         [
+                        #             tuple(tup)
+                        #             for tup in itertools.product(
+                        #                 groups_cam[0],
+                        #                 groups_cam[1],
+                        #                 groups_cam[2],
+                        #             )
+                        #         ]
+                        #     )
+                        else:
+                            groups.append(groups_cam)
             start_group = stop_group
 
     candidates = list(set(candidates))
