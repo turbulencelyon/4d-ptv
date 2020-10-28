@@ -8,7 +8,6 @@
 import math
 from collections import Counter
 import itertools
-from copy import copy
 import datetime
 import sys
 from time import perf_counter
@@ -20,7 +19,7 @@ import numpy as np
 # import scipy.spatial as sps
 
 from transonic import boost, Tuple, List, Array
-from transonic import jit
+# from transonic import jit
 
 from util_groupby import make_groups_by_cell_cam
 

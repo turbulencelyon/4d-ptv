@@ -1,8 +1,8 @@
 PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
 
 all:
-	transonic stm_util.py
-	transonic util_groupby.py
+	transonic stm_util.py -af "-march=native -Ofast -DUSE_XSIMD"
+	transonic util_groupby.py -af "-march=native -Ofast -DUSE_XSIMD"
 
 clean:
 	rm -rf __pythran__
