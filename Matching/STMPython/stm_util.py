@@ -17,10 +17,12 @@ from pprint import pprint
 
 import numpy as np
 
+# import scipy.spatial as sps
+
 from transonic import boost, Tuple, List, Array
 from transonic import jit
 
-# import scipy.spatial as sps
+from util_group_by_cells import make_groups_by_cells
 
 
 def print_repr_inout(fun):
@@ -390,6 +392,8 @@ INDEX_CAM = 0
 
 def make_ray_database(rays, boundingbox, log_print):
 
+    print("PA: make_ray_database")
+
     # Store a dictionary of (cameraid, ray_id): [pos, direction]
     raydb = {}
     valid_rays = []  # Store the transformed rays
@@ -429,103 +433,52 @@ def make_ray_database(rays, boundingbox, log_print):
 def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours, logfile):
     # traversed: List[List[int, int, List[int, int, int]]]
     # [cam_id, ray_id, cell]
-    traversed = []
+    # traversed = []
+
+    print("PA: compute_cells_traversed_by_rays")
+    t_start = perf_counter()
+
+    cells_all = []
+    cam_ray_ids_all = []
     for ray in valid_rays:
         cam_id, ray_id, bool_inside, position, vector_ray = ray
         if bool_inside:  # Ray is inside, traverse both forward and backward
-            out = directional_voxel_traversal(
+            cells_1ray = directional_voxel_traversal(
                 position, vector_ray, bounds, logfile
             ) + directional_voxel_traversal(
                 position, list(map(lambda x: -x, vector_ray)), bounds, logfile
             )
         else:  # Ray is at edge, traverse in forward direction only
-            out = directional_voxel_traversal(
+            cells_1ray = directional_voxel_traversal(
                 position, vector_ray, bounds, logfile
             )
 
         # Expand in neighbourhood and remove duplicates
-        cells = expand_all_neighbours_uniq(out, neighbours)
+        cells = expand_all_neighbours_uniq(cells_1ray, neighbours)
 
         # Creates long list of cam_id, ray_id, cellindex
         # and pile up these into traversed
-        traversed.extend([cam_id, ray_id, cell] for cell in cells)
+        # traversed.extend([cam_id, ray_id, cell] for cell in cells)
 
-    return traversed
+        cells_all.extend(cells)
 
+        nb_cells = len(cells)
 
-@boost
-def kernel_groups_by_cells(groups: List[List[Tuple[int, int]]], cam_match: int):
+        cam_id_arr = np.empty((nb_cells, 1), dtype=np.int16)
+        cam_id_arr.fill(cam_id)
+        ray_id_arr = np.empty((nb_cells, 1), dtype=np.int16)
+        ray_id_arr.fill(ray_id)
+        cam_ray_ids = np.hstack((cam_id_arr, ray_id_arr))
 
-    groups1 = set()
+        cam_ray_ids_all.append(cam_ray_ids)
 
-    for group in groups:
-        if len(group) < cam_match:
-            continue
-        camera_identifiants = set(cam_id for (cam_id, ray_id) in group)
-        if len(camera_identifiants) < cam_match:
-            continue
+    print(
+        "PA: compute_cells_traversed_by_rays done in "
+        f"{perf_counter() - t_start:.2f} s"
+    )
 
-        groups1.add(tuple(group))
-
-    return groups1
-
-
-def make_groups_by_cells(traversed, cam_match: int, log_print=None):
-    """
-
-    Inputs
-    ------
-
-    traversed:
-
-      Sequence[(cam_id, ray_id, cell)]
-
-
-    Returns
-    -------
-
-    Sequence[Sequence[(cam_id, ray_id)]]
-
-    Set[Tuple[(cam_id, ray_id)]]
-
-    We'd like to filter out groups with less than ``cam_match`` cameras.
-
-    """
-    t_start = perf_counter()
-    print("PA: make_groups_by_cells")
-
-    groups = {}
-    t0 = perf_counter()
-
-    # warning perf: this could be rewritten and accelerated with Pythran?
-    # Sort based on cell. Sort is needed before groupby
-    # (CProfile points towards this line)
-
-    def cell_func(x):
-        return x[2]
-
-    traversed.sort(key=cell_func)
-    # Group elements by same cell (CProfile points towards this line)
-    groups = []
-    for _, group in itertools.groupby(traversed, cell_func):
-        group = tuple(group)
-        if len(group) < cam_match:
-            continue
-        groups.append(list(tuple(elem[:2]) for elem in group))
-
-    log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
-
-    groups1 = kernel_groups_by_cells(groups, cam_match)
-
-    del groups
-
-    print(f"PA # of unique group: {len(groups1)}")
-
-    result = tuple(groups1)
-
-    print(f"PA: make_groups_by_cells (byebye) {perf_counter() - t_start:.2f} s")
-
-    return result
+    # return traversed
+    return cells_all, np.vstack(cam_ray_ids_all)
 
 
 def space_traversal_matching(
@@ -630,17 +583,15 @@ def space_traversal_matching(
         )
         sys.exit(1)
 
-    # traversed: List[List[int, int, List[int, int, int]]]
-    # [cam_id, ray_id, cell]
-    traversed = compute_cells_traversed_by_rays(
+    cells_all, cam_ray_ids = compute_cells_traversed_by_rays(
         valid_rays, bounds, neighbours, logfile
     )
 
     del bounds, neighbours
 
-    log_print("# of voxels traversed after expansion:", len(traversed))
+    log_print("# of voxels traversed after expansion:", len(cells_all))
 
-    traversed = make_groups_by_cells(traversed, cam_match, log_print)
+    traversed = make_groups_by_cells(cells_all, cam_ray_ids, cam_match, log_print)
 
     print("\nafter make_groups_by_cells:")
     pprint(traversed[:4])

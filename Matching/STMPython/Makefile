@@ -2,6 +2,7 @@ PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parall
 
 all:
 	transonic stm_util.py
+	transonic util_group_by_cells.py
 
 clean:
 	rm -rf __pythran__
@@ -17,3 +18,6 @@ bench_cpp:
 
 profile:
 	python profile_simple.py
+
+black:
+	black -l 82 .
