@@ -7,7 +7,7 @@ from time import perf_counter
 
 
 @boost
-def special_argsort(cells: "int[:,:]"):
+def special_argsort(cells: "int32[:,:]"):
 
     max_index = cells.max()
     if max_index > 1024:
@@ -36,7 +36,7 @@ def special_argsort(cells: "int[:,:]"):
 
 @boost
 def kernel_make_groups_by_cells(
-    cam_ray_ids_sorted: "int16[:, :]", diffs: "bool[:]", cam_match: int
+    cam_ray_ids_sorted: "int32[:, :]", diffs: "bool[:]", cam_match: int
 ):
 
     groups = []
@@ -83,9 +83,9 @@ def make_groups_by_cells(cells_all, cam_ray_ids, cam_match: int, log_print=None)
     """
     t_start = perf_counter()
     print("PA: make_groups_by_cells")
-    log_print("Sorted and grouped by cell index. # of groups:", len(cells_all))
-
-    cells_all = np.array(cells_all)
+    log_print(
+        "Sorted and grouped by cell index. # of groups:", cells_all.shape[0]
+    )
 
     indices, diffs = special_argsort(cells_all)
 

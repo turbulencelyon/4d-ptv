@@ -45,9 +45,9 @@ def test_expand_all_neighbours():
 
 
 def test_expand_all_neighbours_uniq():
-    neighbours_arrays = [np.array(delta) for delta in neighbours]
-    # ps_arrays = [np.array(point) for point in ps]
-    result = expand_all_neighbours_uniq(ps, neighbours_arrays)
+    result = expand_all_neighbours_uniq(
+        np.array(ps, dtype=np.int32), np.array(neighbours, dtype=np.int32)
+    )
     tmp = [list(point) for point in result]
     assert sorted(tmp) == sorted(attended_out_neighbours)
 
@@ -79,4 +79,4 @@ def test_directional_voxel_traversal2():
 
 def test_directional_voxel_traversal():
     out = directional_voxel_traversal(point, vector_ray, cell_bounds_arr)
-    assert out == attended
+    assert np.allclose(out, attended)

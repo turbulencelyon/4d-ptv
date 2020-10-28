@@ -21,3 +21,6 @@ profile:
 
 black:
 	black -l 82 .
+
+test:
+	pytest test_stm_util.py
