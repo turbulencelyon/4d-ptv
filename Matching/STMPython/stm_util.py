@@ -16,28 +16,9 @@ from pprint import pprint
 
 import numpy as np
 
-# import scipy.spatial as sps
-
 from transonic import boost, Tuple, List, Array
-from transonic import jit
 
 from util_groupby import make_groups_by_cell_cam
-
-
-def print_repr_inout(fun):
-    def new_fun(*args, **kwargs):
-        print("\narguments:\n")
-        for arg in args:
-            print(repr(arg), "\n")
-
-        for name, arg in kwargs.items():
-            print(name, ":\n", repr(arg))
-
-        out = fun(*args, **kwargs)
-        print("out\n", repr(out))
-        raise Exception
-
-    return new_fun
 
 
 @boost
@@ -105,36 +86,6 @@ def special_division(a, b):
         return -math.inf
     else:
         return a / b
-
-
-def maplevel(f, item, level):
-    "Mathematica style map with level specification"
-    if level == 0:
-        return f(item)
-    else:
-        return [maplevel(f, i, level - 1) for i in item]
-
-
-def uniquify(seq, idfun=None):
-    """Return unique elements of a list
-
-    works without second argument for simple elements. Lists-like elements
-    require a lambda function lambda x:tuple(x)
-    """
-    if idfun is None:
-
-        def idfun(x):
-            return x
-
-    seen = set()
-    result = []
-    for item in seq:
-        marker = idfun(item)
-        if marker in seen:
-            continue
-        seen.add(marker)
-        result.append(item)
-    return result
 
 
 def find_index_bin(boundaries, value):
@@ -263,9 +214,8 @@ def directional_voxel_traversal(point, vector_ray, cell_bounds):
     if not len(point) == len(vector_ray) == len(cell_bounds) == 3:
         raise ValueError("dimension mismatch!")
 
-    cell_index_point: Tuple[int, int, int] = tuple(
-        map(find_index_bin, cell_bounds, point)
-    )
+    # cell_index_point: Tuple[int, int, int]
+    cell_index_point = tuple(map(find_index_bin, cell_bounds, point))
 
     if -1 in cell_index_point or vector_norm(vector_ray) == 0:
         raise ValueError(
@@ -405,10 +355,6 @@ def prepare_ray(point, v, bounds):
         return [False, False, tuple(), vector_ray]
 
 
-# First element is camera ID
-INDEX_CAM = 0
-
-
 def make_ray_database(rays, boundingbox, log_print):
 
     print("PA: make_ray_database")
@@ -419,6 +365,8 @@ def make_ray_database(rays, boundingbox, log_print):
     num_rays_per_camera = Counter()  # Store the number of rays per camera
     invalidcounter = Counter()  # Store the number that are invalid
 
+    # First element is camera ID
+    INDEX_CAM = 0
     # Second element is the ray ID
     INDEX_RAY = 1
 
@@ -493,17 +441,17 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
     return np.vstack(cells_all), np.vstack(cam_ray_ids_all)
 
 
-# @jit
+def uniquify_candidates(candidates,):
+    return list(set(candidates))
+
+
 def kernel_make_candidates(traversed):
     # All combinations between all cameras
-
     candidates = list(
         map(lambda x: [tuple(tup) for tup in itertools.product(*x)], traversed)
     )
     # Flatten a list of lists to a single list
-
     candidates = joinlists(candidates)
-
     return candidates
 
 
@@ -522,7 +470,7 @@ def make_candidates(traversed, candidates0, raydb, log_print):
 
     log_print("Flattened list of candidates:", len(candidates))
     # Delete duplicates, flattened list as tag
-    candidates = uniquify(candidates, lambda x: tuple(joinlists(x)))
+    candidates = uniquify_candidates(candidates)
 
     print("\ncandidates (after uniquify):")
     pprint(candidates[:4])
@@ -538,7 +486,10 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     # log_print("Computing match position and quality of candidates...")
     newcandidates = []
     for candidate in candidates:
-        if len(candidate) == 2:
+        try:
+            candidate[2]
+        except IndexError:
+            # then we know that len(candidate) == 2:
             p0, v0 = raydb[candidate[0]]
             p1, v1 = raydb[candidate[1]]
             points = [p0, p1]
@@ -549,6 +500,7 @@ def make_candidates(traversed, candidates0, raydb, log_print):
             points = [ray_data[0] for ray_data in rays_data]
             vectors = [ray_data[1] for ray_data in rays_data]
             closest_point, distance = closest_point_to_lines(points, vectors)
+
         newcandidates.append([candidate, closest_point, distance])
 
     # hullpts = [[20.0,5.0,165.0],[20.0,10.0,160.0],[20.0,10.0,165.0],[20.0,15.0,160.0],[20.0,15.0,165.0],[20.0,20.0,160.0],[20.0,20.0,165.0],[20.0,25.0,160.0],[20.0,25.0,165.0],[25.0,0.0,165.0],[25.0,0.0,170.0],[25.0,5.0,155.0],[25.0,10.0,155.0],[25.0,15.0,155.0],[25.0,20.0,155.0],[25.0,25.0,155.0],[25.0,25.0,175.0],[25.0,30.0,170.0],[25.0,35.0,155.0],[25.0,35.0,160.0],[30.0,-5.0,170.0],[30.0,0.0,160.0],[30.0,5.0,150.0],[30.0,10.0,150.0],[30.0,15.0,150.0],[30.0,20.0,150.0],[30.0,25.0,150.0],[30.0,25.0,180.0],[30.0,30.0,150.0],[30.0,30.0,180.0],[30.0,35.0,175.0],[30.0,40.0,165.0],[30.0,45.0,155.0],[35.0,-10.0,175.0],[35.0,-5.0,165.0],[35.0,-5.0,180.0],[35.0,0.0,155.0],[35.0,10.0,145.0],[35.0,15.0,145.0],[35.0,20.0,145.0],[35.0,25.0,185.0],[35.0,30.0,185.0],[35.0,35.0,150.0],[35.0,35.0,185.0],[35.0,40.0,180.0],[35.0,45.0,155.0],[35.0,45.0,170.0],[35.0,50.0,160.0],[40.0,-10.0,175.0],[40.0,-10.0,180.0],[40.0,-5.0,165.0],[40.0,0.0,155.0],[40.0,5.0,145.0],[40.0,10.0,145.0],[40.0,15.0,145.0],[40.0,30.0,150.0],[40.0,40.0,180.0],[40.0,45.0,155.0],[40.0,45.0,175.0],[40.0,50.0,160.0],[40.0,50.0,165.0],[45.0,-5.0,175.0],[45.0,0.0,165.0],[45.0,5.0,155.0],[45.0,10.0,150.0],[45.0,15.0,150.0],[45.0,40.0,180.0],[45.0,50.0,160.0],[45.0,50.0,165.0],[50.0,15.0,160.0],[50.0,20.0,160.0],[50.0,25.0,175.0],[50.0,30.0,175.0],[50.0,35.0,175.0],[50.0,45.0,165.0],[55.0,15.0,170.0],[55.0,20.0,170.0],[55.0,25.0,170.0],[55.0,30.0,170.0],[55.0,35.0,170.0],[55.0,40.0,170.0]];
