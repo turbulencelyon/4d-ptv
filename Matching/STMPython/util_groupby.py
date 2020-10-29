@@ -159,14 +159,11 @@ def make_groups_by_cell_cam(cells_all, cam_ray_ids, cam_match: int):
 
     """
     t_start = perf_counter()
-    print("PA: make_groups_by_cell_cam")
-
     indices, diffs = special_argsort(cells_all)
     del cells_all
     cam_ray_ids_sorted = cam_ray_ids[indices, :]
     groups, candidates = kernel_make_groups_by_cell_cam(
         cam_ray_ids_sorted, diffs, cam_match
     )
-    print(f"PA # of unique group: {len(groups)}")
-    print(f"PA: make_groups_by_cell_cam done in {perf_counter() - t_start:.2f} s")
+    print(f"make_groups_by_cell_cam done in {perf_counter() - t_start:.2f} s")
     return groups, candidates

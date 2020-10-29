@@ -355,8 +355,6 @@ def prepare_ray(point, v, bounds):
 
 def make_ray_database(rays, boundingbox, log_print):
 
-    print("PA: make_ray_database")
-
     # Store a dictionary of (cameraid, ray_id): [pos, direction]
     raydb = {}
     valid_rays = []  # Store the transformed rays
@@ -397,7 +395,6 @@ def make_ray_database(rays, boundingbox, log_print):
 
 def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
 
-    print("PA: compute_cells_traversed_by_rays")
     t_start = perf_counter()
 
     cells_all = []
@@ -434,7 +431,7 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
         cam_ray_ids_all.append(cam_ray_ids)
 
     print(
-        "PA: compute_cells_traversed_by_rays done in "
+        "compute_cells_traversed_by_rays done in "
         f"{perf_counter() - t_start:.2f} s"
     )
 
@@ -448,7 +445,6 @@ def uniquify_candidates(candidates):
 def make_candidates(traversed, candidates0, raydb, log_print):
 
     t_start = perf_counter()
-    print("PA: make_candidates")
 
     # All combinations between all cameras
     candidates = list(
@@ -507,14 +503,14 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     # for i in range(1,len(candidates),100):
     #    print(i,candidates[i])
 
-    print(f"PA: make_candidates done in {perf_counter() - t_start:.2f} s")
+    print(f"make_candidates done in {perf_counter() - t_start:.2f} s")
 
     return candidates
 
 
 def make_approved_matches(candidates, maxdistance, max_matches_per_ray):
     t_start = perf_counter()
-    print(f"PA: make_approved_matches", end="")
+    print(f"make_approved_matches", end="")
     approved_matches = []  # Store approved candidates
     matchcounter = Counter()  # Keep track of how many they are matched
     for cand in candidates:
