@@ -17,17 +17,19 @@ How does it work?
 
 |
 
-This step has been written in ``Python`` and in ``C++``. The ``C++`` version is 5 times quicker but the ``Python`` one is simpler to use. We will describe both ot them in the following. **We strongly advice you to use ``C++`` version for which the support will be more efficient.**
+This step has been written in ``Python`` and in ``C++``. The ``C++`` version is
+approximately 10% faster but the ``Python`` one is simpler to use. We will
+describe both ot them in the following.
 
-Python way (Depreciated)
-------------------------
+Python way
+----------
 
 The function which do the matching is ``stm.py``. It takes 11 arguments:
 
 - **filename**                 : name of the file containing rays,
 - **minframes**                : number of the first frame,
 - **maxframes**                : number of the last frame,
-- **cam_match**                 : minimum number of crossing rays to get a match,
+- **cam_match**                : minimum number of crossing rays to get a match,
 - **maxdistance**              : max distance allowed for a match,
 - **nx,ny,nz**                 : number of voxels in each direction,
 - **maxmatchesperray**         : number of matches/ray,
@@ -63,10 +65,28 @@ The function creates in the rays folder a file called ``matched_cam{cam_match}_{
 - **other** which is a nmatches x ? matrix [NumberofRaysUsedInMatch, cam0ID,ray0ID,cam1ID,rays1ID,...]
 - **params** whose *params.nframes* gives number of frames and *params.nmatches* provides number of matches.
 
+Installation
+~~~~~~~~~~~~
+
+This package requires Python 3.8. The code is accelerated with `Transonic
+<https://transonic.readthedocs.io>`_ and `Pythran
+<https://pythran.readthedocs.io>`_. Some functions are transpiled to C++ to be
+very efficient.
+
+The Python dependencies can be installed with::
+
+  pip install numpy transonic pythran
+
+You first need to compile the code with the command ``make``. Note that you
+need a quite recent C++ compiler (more details `here
+<https://fluidsim.readthedocs.io/en/latest/install.html#about-using-pythran-to-compile-functions>`_).
+
 C++ way
 --------
 
-The ``C++`` script is al least 50 times faster than the ``Python`` one. This script should be use when you try to track more than 500-1000 particles because then the ``Python`` script is to long. If you track several thousands of particles, you should take a look at the PSMN part where we show how to parallelise computations.
+The ``C++`` script is approximately 10% faster than the ``Python`` one. If you
+track several thousands of particles, you should take a look at the PSMN part
+where we show how to parallelise computations.
 
 .. warning:: Compilation of C++ code
 
@@ -105,8 +125,6 @@ By defaut, it saves results in a h5 file.
 
 
 with the same meaning than for Python way. The ``C++`` language requires to compile scripts before running them. That is done automatically during the library installation. The compiled version of ``STM.cpp`` is ``STM``.
-
-
 
 How to compile ``STM.cpp`` file ?
     We did a ``makefile`` which simplifies everything for you. Before using the 4D-PTV toolbox for the first time, just do:

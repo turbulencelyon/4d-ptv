@@ -37,9 +37,8 @@ Command to launch the same computation (?) with Python::
   STM_PYTHON_USE_UNOPTIMIZED=1 python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
   python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
 
-The old result is: "6754 matched found (out of 135271 candidates)".
-
-Now, it gives "6840 matched found (out of 229311 candidates)".
+With both versions, the same number of matches are found out of the same number
+of candidates: "6754 matched found (out of 135271 candidates)".
 
 Command to launch the C++ code::
 
