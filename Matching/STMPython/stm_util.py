@@ -44,7 +44,7 @@ def print_repr_inout(fun):
 def expand_all_neighbours_uniq(
     points: Array[np.int32, "2d"], neighbours: Array[np.int32, "2d"]
 ):
-    """Take positions p and neighbours and create p+n for each n in neighbours
+    """Take positions and neighbours and create p+n for each n in neighbours
     and for each p
     """
 
@@ -191,11 +191,14 @@ def normalize(v):
 
 
 @boost
-def closest_point_to_lines2(p: List[List[float]], v: List[List[float]]):
-    p1 = np.array(p[0])
-    p2 = np.array(p[1])
-    v1 = np.array(v[0])
-    v2 = np.array(v[1])
+def closest_point_to_lines2(
+    points: List[Tuple[float, float, float]],
+    vectors: List[Tuple[float, float, float]],
+):
+    p1 = np.array(points[0])
+    p2 = np.array(points[1])
+    v1 = np.array(vectors[0])
+    v2 = np.array(vectors[1])
     # a = np.dot(v1,v1)          # Assuming v is normalized => length 1
     b = 2 * np.dot(p1 - p2, v1)
     c = 2 * np.dot(v1, v2)
@@ -221,7 +224,7 @@ A2 = "float64[:, :]"
 @boost
 def prepare_linalg_solve(a: A2, d: A2):
     length = len(a)
-    rhs = np.array([0.0, 0.0, 0.0])
+    rhs = np.zeros(3, dtype=np.float64)
     lhs = length * np.identity(3)
     for i in range(length):
         rhs += a[i] - d[i] * np.dot(a[i], d[i])
@@ -236,21 +239,18 @@ def compute_distance(a: A2, d: A2, sol: "float64[:]"):
     return float(distance)
 
 
-def closest_point_to_lines(p, v):
+def closest_point_to_lines(points, vectors):
     """...
 
     Note: 9% of the time spent here (CProfile)
     """
-
-    if len(p) == 2:
-        return closest_point_to_lines2(p, v)
-    else:
-        a = np.array(p)
-        # Assuming v is normalized already
-        d = np.array(v)
-        lhs, rhs = prepare_linalg_solve(a, d)
-        sol = np.linalg.solve(lhs, rhs)
-        return sol.tolist(), compute_distance(a, d, sol)
+    assert len(points) > 2
+    a = np.array(points)
+    # Assuming v is normalized already
+    d = np.array(vectors)
+    lhs, rhs = prepare_linalg_solve(a, d)
+    sol = np.linalg.solve(lhs, rhs)
+    return sol.tolist(), compute_distance(a, d, sol)
 
 
 def directional_voxel_traversal(point, vector_ray, cell_bounds):
@@ -280,8 +280,8 @@ def directional_voxel_traversal(point, vector_ray, cell_bounds):
 
 @boost
 def kernel_directional_voxel_traversal(
-    point: List[float],
-    vector_ray: List[float],
+    point: Tuple[float, float, float],
+    vector_ray: Tuple[float, float, float],
     cell_bounds: List[Array[float, "1d"]],
     cell_index_point: Tuple[int, int, int],
 ):
@@ -333,9 +333,9 @@ def at_face(bmin, bmax, hitb):
     return bmin <= hitb <= bmax
 
 
-def prepare_ray(p, v, bounds):
+def prepare_ray(point, v, bounds):
     """
-    Projects ray (defined by p, v) onto an AABB (axis aligned bounding box).
+    Projects ray (defined by point, v) onto an AABB (axis aligned bounding box).
 
     Returns (bool_hit, bool_inside, position, vector_ray)
 
@@ -355,13 +355,18 @@ def prepare_ray(p, v, bounds):
     ymax = bounds[1][1]
     zmin = bounds[2][0]
     zmax = bounds[2][1]
-    x = p[0]
-    y = p[1]
-    z = p[2]
-    vector_ray = normalize(v).tolist()  # v is normalized
+    x = point[0]
+    y = point[1]
+    z = point[2]
+    vector_ray = tuple(normalize(v))  # v is normalized
     vx, vy, vz = vector_ray
     if xmin < x < xmax and ymin < y < ymax and zmin < z < zmax:
-        return [True, True, p, vector_ray]  # Return False and original point
+        return [
+            True,
+            True,
+            tuple(point),
+            vector_ray,
+        ]  # Return False and original point
     else:
         t = list(
             map(
@@ -395,9 +400,9 @@ def prepare_ray(p, v, bounds):
         # Sort by arrival time (time till hit)
         data = sorted(data, key=lambda x: x[0])
         # Position it hits the plane of first-hit
-        return [True, False, data[0][2], vector_ray]
+        return [True, False, tuple(data[0][2]), vector_ray]
     else:
-        return [False, False, [], vector_ray]
+        return [False, False, tuple(), vector_ray]
 
 
 # First element is camera ID
@@ -458,7 +463,7 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
                 (
                     directional_voxel_traversal(position, vector_ray, bounds),
                     directional_voxel_traversal(
-                        position, list(map(lambda x: -x, vector_ray)), bounds,
+                        position, tuple(map(lambda x: -x, vector_ray)), bounds,
                     ),
                 )
             )
@@ -512,25 +517,39 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     print("\ncandidates (after joinlists):")
     pprint(candidates[:4])
 
-    print("\ncandidates0 (after joinlists):")
+    print("\ncandidates0:")
     pprint(candidates0[:4])
-
-    candidates.extend(candidates0)
 
     log_print("Flattened list of candidates:", len(candidates))
     # Delete duplicates, flattened list as tag
     candidates = uniquify(candidates, lambda x: tuple(joinlists(x)))
+
+    print("\ncandidates (after uniquify):")
+    pprint(candidates[:4])
+
+    candidates.extend(candidates0)
+
     log_print("Duplicate candidates removed:", len(candidates))
     candidates = sorted(candidates)
 
+    print("\ncandidates (after sorted):")
+    pprint(candidates[:4])
+
     # log_print("Computing match position and quality of candidates...")
     newcandidates = []
-    for c in candidates:
-        pvdata = [raydb[tuple(x)] for x in c]
-        pdata = [x[0] for x in pvdata]
-        vdata = [x[1] for x in pvdata]
-        closest_point, distance = closest_point_to_lines(pdata, vdata)
-        newcandidates.append([c, closest_point, distance])
+    for candidate in candidates:
+        if len(candidate) == 2:
+            p0, v0 = raydb[candidate[0]]
+            p1, v1 = raydb[candidate[1]]
+            points = [p0, p1]
+            vectors = [v0, v1]
+            closest_point, distance = closest_point_to_lines2(points, vectors)
+        else:
+            rays_data = [raydb[cam_ray_id] for cam_ray_id in candidate]
+            points = [ray_data[0] for ray_data in rays_data]
+            vectors = [ray_data[1] for ray_data in rays_data]
+            closest_point, distance = closest_point_to_lines(points, vectors)
+        newcandidates.append([candidate, closest_point, distance])
 
     # hullpts = [[20.0,5.0,165.0],[20.0,10.0,160.0],[20.0,10.0,165.0],[20.0,15.0,160.0],[20.0,15.0,165.0],[20.0,20.0,160.0],[20.0,20.0,165.0],[20.0,25.0,160.0],[20.0,25.0,165.0],[25.0,0.0,165.0],[25.0,0.0,170.0],[25.0,5.0,155.0],[25.0,10.0,155.0],[25.0,15.0,155.0],[25.0,20.0,155.0],[25.0,25.0,155.0],[25.0,25.0,175.0],[25.0,30.0,170.0],[25.0,35.0,155.0],[25.0,35.0,160.0],[30.0,-5.0,170.0],[30.0,0.0,160.0],[30.0,5.0,150.0],[30.0,10.0,150.0],[30.0,15.0,150.0],[30.0,20.0,150.0],[30.0,25.0,150.0],[30.0,25.0,180.0],[30.0,30.0,150.0],[30.0,30.0,180.0],[30.0,35.0,175.0],[30.0,40.0,165.0],[30.0,45.0,155.0],[35.0,-10.0,175.0],[35.0,-5.0,165.0],[35.0,-5.0,180.0],[35.0,0.0,155.0],[35.0,10.0,145.0],[35.0,15.0,145.0],[35.0,20.0,145.0],[35.0,25.0,185.0],[35.0,30.0,185.0],[35.0,35.0,150.0],[35.0,35.0,185.0],[35.0,40.0,180.0],[35.0,45.0,155.0],[35.0,45.0,170.0],[35.0,50.0,160.0],[40.0,-10.0,175.0],[40.0,-10.0,180.0],[40.0,-5.0,165.0],[40.0,0.0,155.0],[40.0,5.0,145.0],[40.0,10.0,145.0],[40.0,15.0,145.0],[40.0,30.0,150.0],[40.0,40.0,180.0],[40.0,45.0,155.0],[40.0,45.0,175.0],[40.0,50.0,160.0],[40.0,50.0,165.0],[45.0,-5.0,175.0],[45.0,0.0,165.0],[45.0,5.0,155.0],[45.0,10.0,150.0],[45.0,15.0,150.0],[45.0,40.0,180.0],[45.0,50.0,160.0],[45.0,50.0,165.0],[50.0,15.0,160.0],[50.0,20.0,160.0],[50.0,25.0,175.0],[50.0,30.0,175.0],[50.0,35.0,175.0],[50.0,45.0,165.0],[55.0,15.0,170.0],[55.0,20.0,170.0],[55.0,25.0,170.0],[55.0,30.0,170.0],[55.0,35.0,170.0],[55.0,40.0,170.0]];
     # delaun = sps.Delaunay(hullpts)  # Define the Delaunay triangulation
