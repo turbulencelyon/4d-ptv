@@ -12,8 +12,6 @@ import datetime
 import sys
 from time import perf_counter
 
-from pprint import pprint
-
 import numpy as np
 
 from transonic import boost, Tuple, List, Array
@@ -411,7 +409,9 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
                 (
                     directional_voxel_traversal(position, vector_ray, bounds),
                     directional_voxel_traversal(
-                        position, tuple(map(lambda x: -x, vector_ray)), bounds,
+                        position,
+                        tuple(map(lambda x: -x, vector_ray)),
+                        bounds,
                     ),
                 )
             )
@@ -441,18 +441,8 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
     return np.vstack(cells_all), np.vstack(cam_ray_ids_all)
 
 
-def uniquify_candidates(candidates,):
+def uniquify_candidates(candidates):
     return list(set(candidates))
-
-
-def kernel_make_candidates(traversed):
-    # All combinations between all cameras
-    candidates = list(
-        map(lambda x: [tuple(tup) for tup in itertools.product(*x)], traversed)
-    )
-    # Flatten a list of lists to a single list
-    candidates = joinlists(candidates)
-    return candidates
 
 
 def make_candidates(traversed, candidates0, raydb, log_print):
@@ -460,28 +450,24 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     t_start = perf_counter()
     print("PA: make_candidates")
 
-    candidates = kernel_make_candidates(traversed)
+    # All combinations between all cameras
+    candidates = list(
+        map(
+            lambda x: [tuple(sorted(tup)) for tup in itertools.product(*x)],
+            traversed,
+        )
+    )
+    # Flatten a list of lists to a single list
+    candidates = joinlists(candidates)
 
-    print("\ncandidates (after joinlists):")
-    pprint(candidates[:4])
-
-    print("\ncandidates0:")
-    pprint(candidates0[:4])
+    candidates.extend(candidates0)
 
     log_print("Flattened list of candidates:", len(candidates))
     # Delete duplicates, flattened list as tag
     candidates = uniquify_candidates(candidates)
 
-    print("\ncandidates (after uniquify):")
-    pprint(candidates[:4])
-
-    candidates.extend(candidates0)
-
     log_print("Duplicate candidates removed:", len(candidates))
     candidates = sorted(candidates)
-
-    print("\ncandidates (after sorted):")
-    pprint(candidates[:4])
 
     # log_print("Computing match position and quality of candidates...")
     newcandidates = []
@@ -664,11 +650,6 @@ def space_traversal_matching(
     )
 
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
-
-    print("\nPA: traversed after grouped by:")
-    pprint(traversed[:4])
-
-    log_print("Pruned based on number of cameras:", len(traversed))
 
     candidates = make_candidates(traversed, candidates0, raydb, log_print)
 

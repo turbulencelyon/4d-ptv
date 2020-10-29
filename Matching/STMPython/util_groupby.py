@@ -1,4 +1,3 @@
-# from pprint import pprint
 import itertools
 
 import numpy as np
@@ -86,25 +85,41 @@ def kernel_make_groups_by_cell_cam(
                 nb_cameras = len(set(cam_ids))
                 if nb_cameras >= cam_match:
                     if nb_elems == 2:
-                        # we can already compute candidates
-                        candidates.append((tuple(group[0]), tuple(group[1])))
+                        # we can already compute the candidate
+                        tup0 = tuple(group[0])
+                        tup1 = tuple(group[1])
+                        # we'd like to have (not supported by Pythran)
+                        # if tup1 > tup0:
+                        #     cand = (tup0, tup1)
+                        # else:
+                        #     cand = (tup1, tup0)
+                        # it could also be written as (not supported by Pythran)
+                        # cand = sorted((tup0, tup1))
+                        # Pythran supports
+                        # (buggy, then we need the list comp. at the end)
+                        cand = (tup0, tup1)
+                        candidates.append(cand)
                     else:
                         groups_cam = group_by_cam(group)
                         assert len(groups_cam) == nb_cameras
                         if nb_cameras == 2:
+                            # we can already compute candidates
                             candidates.extend(
                                 [
-                                    tuple(tup)
+                                    # not supported by Pythran
+                                    # tuple(sorted(tup))
+                                    tup
                                     for tup in itertools.product(
                                         groups_cam[0], groups_cam[1]
                                     )
                                 ]
                             )
-                        # no supported by Pythran?
+                        # it would be good for performance to do the same
+                        # with 3 cameras (no supported by Pythran?)
                         # elif nb_cameras == 3:
                         #     candidates.extend(
                         #         [
-                        #             tuple(tup)
+                        #             tup
                         #             for tup in itertools.product(
                         #                 groups_cam[0],
                         #                 groups_cam[1],
@@ -116,6 +131,8 @@ def kernel_make_groups_by_cell_cam(
                             groups.append(groups_cam)
             start_group = stop_group
 
+    # needed because we can't add sorted tuples above (Pythran limitation)
+    candidates = [tuple(sorted(cand)) for cand in candidates]
     candidates = list(set(candidates))
     return groups, candidates
 

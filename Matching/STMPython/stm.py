@@ -46,7 +46,6 @@ Command to launch the C++ code::
   ../STMCpp/STM -i $PATH_INPUT_DATA -f 1 -c 2 -d 0.2 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
 
 The result of the C++ code is 7466 matched found (out of 135271 candidates)
-
 """
 
 if not USE_UNOPTIMIZED:
