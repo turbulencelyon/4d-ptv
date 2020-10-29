@@ -86,7 +86,8 @@ def special_division(a, b):
         return a / b
 
 
-def find_index_bin(boundaries, value):
+@boost
+def find_index_bin(boundaries: "float[:]", value: "float"):
     """
     Gives index in which 'bin' the value value will fall with boundaries 'boundaries', -1
     = outside
@@ -110,7 +111,7 @@ def find_index_bin(boundaries, value):
         while mx - mn > 1:
             # print('min',mn,'max',mx)
             # Banker's rounding but does not matter, still O(Log(N)) scaling
-            trial = round((mn + mx) / 2)
+            trial = int(round((mn + mx) / 2))
             if value > boundaries[trial]:
                 mn = trial
             else:
