@@ -32,14 +32,20 @@ To be compared to the perf of the C++ code: 8.45 s!
 
 - The unoptimized Python code is 21.2 time slower than the optimized C++ one.
 
+Command to launch the same computation (?) with Python::
+
+  STM_PYTHON_USE_UNOPTIMIZED=1 python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
+  python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
+
+The old result is: "6754 matched found (out of 135271 candidates)".
+
+Now, it gives "6840 matched found (out of 229311 candidates)".
+
 Command to launch the C++ code::
 
   ../STMCpp/STM -i $PATH_INPUT_DATA -f 1 -c 2 -d 0.2 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
 
-Command to launch the same computation (?) with Python::
-
-  python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
-  STM_PYTHON_USE_UNOPTIMIZED=1 python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
+The result of the C++ code is 7466 matched found (out of 135271 candidates)
 
 """
 
