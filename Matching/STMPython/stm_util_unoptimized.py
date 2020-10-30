@@ -672,7 +672,7 @@ def space_traversal_matching(
     log_print("Pruned based on number of cameras:", len(traversed))
     # All combinations between all cameras
     candidates = list(
-        map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed,)
+        map(lambda x: [list(tup) for tup in itertools.product(*x)], traversed)
     )
     # Flatten a list of lists to a single list
     candidates = joinlists(candidates)

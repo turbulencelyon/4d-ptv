@@ -409,9 +409,7 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
                 (
                     directional_voxel_traversal(position, vector_ray, bounds),
                     directional_voxel_traversal(
-                        position,
-                        tuple(map(lambda x: -x, vector_ray)),
-                        bounds,
+                        position, tuple(map(lambda x: -x, vector_ray)), bounds
                     ),
                 )
             )

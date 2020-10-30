@@ -75,7 +75,10 @@ very efficient.
 
 The Python dependencies can be installed with::
 
-  pip install numpy transonic pythran
+  pip install numpy transonic
+  # since we use some new features and fixes in Pythran
+  # we need to install from the repository
+  pip install git+https://github.com/serge-sans-paille/pythran.git#egg=pythran
 
 You first need to compile the code with the command ``make``. Note that you
 need a quite recent C++ compiler (more details `here
