@@ -6,6 +6,7 @@
 """
 
 import math
+from math import sqrt
 from collections import Counter
 import itertools
 import datetime
@@ -14,7 +15,9 @@ from time import perf_counter
 
 import numpy as np
 
-from transonic import boost, Tuple, List, Array
+from transonic import boost, Tuple, List, Array, Union
+
+# from transonic import jit
 
 from util_groupby import make_groups_by_cell_cam
 
@@ -122,22 +125,24 @@ def find_index_bin(boundaries: "float[:]", value: "float"):
         return -1
 
 
-def vector_norm(y):
-    "Euclidean distance of a list (faster than np.linalg.norm(y)!)"
-    x = np.array(y)
-    return np.sqrt(x.dot(x))
+def vector_norm(v):
+    "Euclidean distance"
+    v0, v1, v2 = v
+    return sqrt(v0 ** 2 + v1 ** 2 + v2 ** 2)
 
 
-def square_vector_norm(y):
-    x = np.array(y)
-    return x.dot(x)
+def square_vector_norm(v):
+    v0, v1, v2 = v
+    return v0 ** 2 + v1 ** 2 + v2 ** 2
 
 
-def normalize(v):
-    norm = vector_norm(v)
+@boost
+def normalize(v: Tuple[float, float, float]):
+    v0, v1, v2 = v
+    norm = sqrt(v0 ** 2 + v1 ** 2 + v2 ** 2)
     if norm == 0:
-        return v
-    return v / norm
+        raise ValueError
+    return v0 / norm, v1 / norm, v2 / norm
 
 
 @boost
@@ -216,7 +221,7 @@ def directional_voxel_traversal(point, vector_ray, cell_bounds):
     # cell_index_point: Tuple[int, int, int]
     cell_index_point = tuple(map(find_index_bin, cell_bounds, point))
 
-    if -1 in cell_index_point or vector_norm(vector_ray) == 0:
+    if -1 in cell_index_point:
         raise ValueError(
             f"ray starts outside cell_bounds!\np: {point}\n"
             f"v: {vector_ray}\ncell index: {cell_index_point}\n"
@@ -309,7 +314,7 @@ def prepare_ray(point, v, bounds):
     x = point[0]
     y = point[1]
     z = point[2]
-    vector_ray = tuple(normalize(v))  # v is normalized
+    vector_ray = normalize(v)
     vx, vy, vz = vector_ray
     if xmin < x < xmax and ymin < y < ymax and zmin < z < zmax:
         return [
@@ -374,10 +379,10 @@ def make_ray_database(rays, boundingbox, log_print):
         ray_id = ray[INDEX_RAY]
         num_rays_per_camera[cam_id] += 1
 
-        pp = list(ray[2:5])
-        vv = list(ray[5:8])
+        point = tuple(ray[2:5])
+        vector = tuple(ray[5:8])
         bool_hit, bool_inside, position, vector_ray = prepare_ray(
-            pp, vv, boundingbox
+            point, vector, boundingbox
         )
 
         if bool_hit:  # If it does not miss (hit or inside)
