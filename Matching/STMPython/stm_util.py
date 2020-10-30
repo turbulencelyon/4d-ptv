@@ -12,8 +12,6 @@ import datetime
 import sys
 from time import perf_counter
 
-from pprint import pprint
-
 import numpy as np
 
 from transonic import boost, Tuple, List, Array
@@ -88,7 +86,8 @@ def special_division(a, b):
         return a / b
 
 
-def find_index_bin(boundaries, value):
+@boost
+def find_index_bin(boundaries: "float[:]", value: "float"):
     """
     Gives index in which 'bin' the value value will fall with boundaries 'boundaries', -1
     = outside
@@ -112,7 +111,7 @@ def find_index_bin(boundaries, value):
         while mx - mn > 1:
             # print('min',mn,'max',mx)
             # Banker's rounding but does not matter, still O(Log(N)) scaling
-            trial = round((mn + mx) / 2)
+            trial = int(round((mn + mx) / 2))
             if value > boundaries[trial]:
                 mn = trial
             else:
@@ -357,8 +356,6 @@ def prepare_ray(point, v, bounds):
 
 def make_ray_database(rays, boundingbox, log_print):
 
-    print("PA: make_ray_database")
-
     # Store a dictionary of (cameraid, ray_id): [pos, direction]
     raydb = {}
     valid_rays = []  # Store the transformed rays
@@ -399,7 +396,6 @@ def make_ray_database(rays, boundingbox, log_print):
 
 def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
 
-    print("PA: compute_cells_traversed_by_rays")
     t_start = perf_counter()
 
     cells_all = []
@@ -411,7 +407,9 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
                 (
                     directional_voxel_traversal(position, vector_ray, bounds),
                     directional_voxel_traversal(
-                        position, tuple(map(lambda x: -x, vector_ray)), bounds,
+                        position,
+                        tuple(map(lambda x: -x, vector_ray)),
+                        bounds,
                     ),
                 )
             )
@@ -434,54 +432,39 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
         cam_ray_ids_all.append(cam_ray_ids)
 
     print(
-        "PA: compute_cells_traversed_by_rays done in "
+        "compute_cells_traversed_by_rays done in "
         f"{perf_counter() - t_start:.2f} s"
     )
 
     return np.vstack(cells_all), np.vstack(cam_ray_ids_all)
 
 
-def uniquify_candidates(candidates,):
+def uniquify_candidates(candidates):
     return list(set(candidates))
-
-
-def kernel_make_candidates(traversed):
-    # All combinations between all cameras
-    candidates = list(
-        map(lambda x: [tuple(tup) for tup in itertools.product(*x)], traversed)
-    )
-    # Flatten a list of lists to a single list
-    candidates = joinlists(candidates)
-    return candidates
 
 
 def make_candidates(traversed, candidates0, raydb, log_print):
 
     t_start = perf_counter()
-    print("PA: make_candidates")
 
-    candidates = kernel_make_candidates(traversed)
+    # All combinations between all cameras
+    candidates = list(
+        map(
+            lambda x: [tuple(sorted(tup)) for tup in itertools.product(*x)],
+            traversed,
+        )
+    )
+    # Flatten a list of lists to a single list
+    candidates = joinlists(candidates)
 
-    print("\ncandidates (after joinlists):")
-    pprint(candidates[:4])
-
-    print("\ncandidates0:")
-    pprint(candidates0[:4])
+    candidates.extend(candidates0)
 
     log_print("Flattened list of candidates:", len(candidates))
     # Delete duplicates, flattened list as tag
     candidates = uniquify_candidates(candidates)
 
-    print("\ncandidates (after uniquify):")
-    pprint(candidates[:4])
-
-    candidates.extend(candidates0)
-
     log_print("Duplicate candidates removed:", len(candidates))
     candidates = sorted(candidates)
-
-    print("\ncandidates (after sorted):")
-    pprint(candidates[:4])
 
     # log_print("Computing match position and quality of candidates...")
     newcandidates = []
@@ -521,14 +504,14 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     # for i in range(1,len(candidates),100):
     #    print(i,candidates[i])
 
-    print(f"PA: make_candidates done in {perf_counter() - t_start:.2f} s")
+    print(f"make_candidates done in {perf_counter() - t_start:.2f} s")
 
     return candidates
 
 
 def make_approved_matches(candidates, maxdistance, max_matches_per_ray):
     t_start = perf_counter()
-    print(f"PA: make_approved_matches", end="")
+    print(f"make_approved_matches", end="")
     approved_matches = []  # Store approved candidates
     matchcounter = Counter()  # Keep track of how many they are matched
     for cand in candidates:
@@ -664,11 +647,6 @@ def space_traversal_matching(
     )
 
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
-
-    print("\nPA: traversed after grouped by:")
-    pprint(traversed[:4])
-
-    log_print("Pruned based on number of cameras:", len(traversed))
 
     candidates = make_candidates(traversed, candidates0, raydb, log_print)
 
