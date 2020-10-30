@@ -1,29 +1,34 @@
 #! /usr/bin/env python
 """
+Compute matches from rays projecting them into voxels.
 
-Example::
+Example:
 
   export PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
-  python stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
+  ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
 
-For xonsh:
+or (to specify the limits of the visualized region):
 
-  $PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
+  ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2 "[[-140, 140], [-150, 150], [5, 170]]"
+
 
 """
 import os
-import sys
 import copy
 import struct
 import traceback
 from time import perf_counter
-
-import numpy as np
+import argparse
 
 
 USE_UNOPTIMIZED = os.environ.get("STM_PYTHON_USE_UNOPTIMIZED", False)
 
-""" Note: the "unoptimized" code is actually slightly faster than the first
+"""
+For xonsh::
+
+  $PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
+
+Note: the "unoptimized" code is actually slightly faster than the first
 Python code: 179.5 s versus 184 s, i.e. 2.4 % faster :-)
 
 To be compared to the perf of the C++ code: 8.45 s!
@@ -56,39 +61,21 @@ else:
 
 def compute_stm(
     filename,
-    minframes,
-    maxframes,
+    start_frame,
+    stop_frames,
     cam_match,
-    maxdistance,
+    max_distance,
     nx,
     ny,
     nz,
     max_matches_per_ray,
-    boundingbox=[[-140, 140], [-150, 150], [5, 170]],
+    bounding_box=[[-140, 140], [-150, 150], [5, 170]],
     neighbours=6,
 ):
     """
     Compute matches from rays projecting them into voxels.
 
-    # Parameters
-
-    - filename                           # name of the file containing rays
-    - minframes                          # number of the first frame
-    - maxframes                          # number of the last frame
-    - cam_match
-
-    minimum number of rays crossing to get a match. We require a match to
-    satisfy cam_match_func = lambda x: len(x)>=cam_match for the number of
-    cameras (and thus the number of rays)
-
-
-    - maxdistance                        # max distance allowed for a match.
-    - nx,ny,nz                           # number of voxels in each direction
-    - max_matches_per_ray                # number of matches/ray
-    - boundingbox
-
-    Corresponds to the volume visualized [[minX,maxX],[minY,maxY],[minZ,maxZ]]
-    ATTENTION Does not work currently -> To DO !!
+    See the output of ``./stm.py -h`` for the meaning of the arguments.
 
     - neighbours
 
@@ -109,14 +96,14 @@ def compute_stm(
     filelog = fileout + ".log"
     fileout = (
         fileout.replace("rays", "matched")
-        + f"cam{cam_match}_{minframes}-{maxframes}.dat"
+        + f"cam{cam_match}_{start_frame}-{stop_frames-1}.dat"
     )
 
     fout = open(fileout, "wb")
     fin = open(filename, "rb")
-    frameid = minframes
+    frameid = start_frame
     numpts = fin.read(4)  # Read 4 bytes header
-    while len(numpts) > 0 and frameid < maxframes:  # If something is read
+    while len(numpts) > 0 and frameid < stop_frames:  # If something is read
         numpts = struct.unpack("I", numpts)[0]  # Interpret header as 4 byte uint
         with open(filelog, "a") as flog:
             flog.write("#######\nFrame: {frameid}\nNumber of rays: {numpts}\n")
@@ -137,15 +124,15 @@ def compute_stm(
         # The actual call
         try:
             output = space_traversal_matching(
-                list(raydata),
-                boundingbox,
+                raydata,
+                bounding_box,
                 nx=nx,
                 nz=nz,
                 ny=ny,
                 cam_match=cam_match,
                 neighbours=neighbours,
                 logfile=filelog,
-                maxdistance=maxdistance,
+                max_distance=max_distance,
             )
         except ValueError:
             tb = traceback.format_exc()
@@ -185,44 +172,103 @@ def compute_stm(
 
     elapsed = perf_counter() - tstart
     print(f"Elapsed time: {elapsed:.2f} s")
-    print(f"Elapsed time/frame: {elapsed / (frameid - 1):.2f} s")
+    print(f"Elapsed time/frame: {elapsed / (stop_frames - start_frame):.2f} s")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
+
+    parser.add_argument(
+        "path_file",
+        type=str,
+        help="Path towards the file containing the ray data.",
+    )
+
+    parser.add_argument(
+        "start_frame",
+        type=int,
+        help="Index of the first frame.",
+    )
+
+    parser.add_argument(
+        "stop_frame",
+        type=int,
+        help="Index of the last frame + 1.",
+    )
+
+    parser.add_argument(
+        "cam_match",
+        type=int,
+        help="Minimum number of rays crossing to get a match.",
+    )
+
+    parser.add_argument(
+        "max_distance",
+        type=float,
+        help="Maximum distance allowed for a match.",
+    )
+
+    parser.add_argument(
+        "nx",
+        type=int,
+        help="Number of voxels in the x direction",
+    )
+
+    parser.add_argument(
+        "ny",
+        type=int,
+        help="Number of voxels in the y direction",
+    )
+
+    parser.add_argument(
+        "nz",
+        type=int,
+        help="Number of voxels in the z direction",
+    )
+
+    parser.add_argument(
+        "max_matches_per_ray",
+        type=int,
+        help="Maximum number of matches/ray",
+    )
+
+    parser.add_argument(
+        "bounding_box",
+        type=str,
+        nargs="?",
+        help=(
+            "Corresponds to the volume visualized "
+            "[[minX, maxX], [minY, maxY], [minZ, maxZ]]"
+        ),
+        default="[[-140, 140], [-150, 150], [5, 170]]",
+    )
+
+    args = parser.parse_args()
+    bounding_box_as_str = args.bounding_box
+    args.bounding_box = eval(bounding_box_as_str)
+
+    return args
 
 
 def main():
-    # print(sys.argv)
 
-    if len(sys.argv) == 10:
-        compute_stm(
-            str(sys.argv[1]),
-            int(sys.argv[2]),
-            int(sys.argv[3]),
-            int(sys.argv[4]),
-            float(sys.argv[5]),
-            int(sys.argv[6]),
-            int(sys.argv[7]),
-            int(sys.argv[8]),
-            int(sys.argv[9]),
-        )
-    elif len(sys.argv) == 11:
-        compute_stm(
-            str(sys.argv[1]),
-            int(sys.argv[2]),
-            int(sys.argv[3]),
-            int(sys.argv[4]),
-            float(sys.argv[5]),
-            int(sys.argv[6]),
-            int(sys.argv[7]),
-            int(sys.argv[8]),
-            int(sys.argv[9]),
-            np.array(sys.argv[10]),
-        )
-    else:
-        print(
-            f"Only {len(sys.argv) - 1} arguments\n"
-            "There should be an argument with the "
-            "filename, minframe, maxframe, cam_match, maxdistance, nx, ny, nz,"
-            " max_matches_per_ray, boundingbox(optional)!"
-        )
+    args = parse_args()
+    print(args)
+
+    compute_stm(
+        args.path_file,
+        args.start_frame,
+        args.stop_frame,
+        args.cam_match,
+        args.max_distance,
+        args.nx,
+        args.ny,
+        args.nz,
+        args.max_matches_per_ray,
+        args.bounding_box,
+    )
 
 
 if __name__ == "__main__":

@@ -359,7 +359,7 @@ def prepare_ray(point, v, bounds):
         return [False, False, tuple(), vector_ray]
 
 
-def make_ray_database(rays, boundingbox, log_print):
+def make_ray_database(rays, bounding_box, log_print):
 
     # Store a dictionary of (cameraid, ray_id): [pos, direction]
     raydb = {}
@@ -380,7 +380,7 @@ def make_ray_database(rays, boundingbox, log_print):
         point = tuple(ray[2:5])
         vector = tuple(ray[5:8])
         bool_hit, bool_inside, position, vector_ray = prepare_ray(
-            point, vector, boundingbox
+            point, vector, bounding_box
         )
 
         if bool_hit:  # If it does not miss (hit or inside)
@@ -531,7 +531,7 @@ def make_approved_matches(
     closest_points,
     distances,
     indices_better_candidates,
-    maxdistance,
+    max_distance,
     max_matches_per_ray,
 ):
     t_start = perf_counter()
@@ -543,7 +543,7 @@ def make_approved_matches(
         candidate = candidates[index_candidate]
         distance = distances[index_candidate]
 
-        if distance < maxdistance:
+        if distance < max_distance:
             valid = True
             for idpair in candidate:
                 if match_counter[idpair] >= max_matches_per_ray:
@@ -563,22 +563,22 @@ def make_approved_matches(
 
 def space_traversal_matching(
     raydata,
-    boundingbox,
+    bounding_box,
     nx=75,
     ny=75,
     nz=75,
     cam_match=2,
     max_matches_per_ray=2,
-    maxdistance=999.9,
+    max_distance=999.9,
     neighbours=6,
     logfile="",
 ):
 
     if not (
-        len(boundingbox) == 3
-        and len(boundingbox[0]) == 2
-        and len(boundingbox[1]) == 2
-        and len(boundingbox[2]) == 2
+        len(bounding_box) == 3
+        and len(bounding_box[0]) == 2
+        and len(bounding_box[1]) == 2
+        and len(bounding_box[2]) == 2
         and nx >= 5
         and ny >= 5
         and nz >= 5
@@ -586,11 +586,11 @@ def space_traversal_matching(
         print(
             "Something went wrong:\n"
             "Bounding box should be of the form "
-            "[[xmin,xmax],[ymin,ymax],[zmin,zmax]] {boundingbox}\n",
+            "[[xmin,xmax],[ymin,ymax],[zmin,zmax]] {bounding_box}\n",
             "nx,ny,nz should be >=5 otherwise you will do a lot of comparisons!",
             [nx, ny, nz],
         )
-        return []
+        raise ValueError()
 
     if neighbours == 0:
         neighbours = [[0, 0, 0]]
@@ -644,7 +644,7 @@ def space_traversal_matching(
     log_print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     bounds = [
         np.linspace(limits[0], limits[1], n + 1)
-        for limits, n in zip(boundingbox, (nx, ny, nz))
+        for limits, n in zip(bounding_box, (nx, ny, nz))
     ]
 
     log_print("# of cells:", nx * ny * nz)
@@ -652,7 +652,7 @@ def space_traversal_matching(
 
     # Prepare the rays so that they are inside the box or on the side.
     raydb, valid_rays, num_rays_per_camera = make_ray_database(
-        rays, boundingbox, log_print
+        rays, bounding_box, log_print
     )
 
     if len(dict(num_rays_per_camera)) > 10:
@@ -697,7 +697,7 @@ def space_traversal_matching(
         closest_points,
         distances,
         indices_better_candidates,
-        maxdistance,
+        max_distance,
         max_matches_per_ray,
     )
 
