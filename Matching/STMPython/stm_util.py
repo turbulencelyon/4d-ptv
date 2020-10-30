@@ -15,9 +15,7 @@ from time import perf_counter
 
 import numpy as np
 
-from transonic import boost, Tuple, List, Array, Union
-
-# from transonic import jit
+from transonic import boost, Tuple, List, Array
 
 from util_groupby import make_groups_by_cell_cam
 
@@ -401,12 +399,31 @@ def make_ray_database(rays, boundingbox, log_print):
     return raydb, valid_rays, num_rays_per_camera
 
 
+@boost
+def create_cam_ray_ids(
+    cam_ray_ids_info: List[Tuple[int, int, int]], nb_cells_all: int
+):
+
+    cam_ray_ids = np.empty((nb_cells_all, 2), dtype=np.int32)
+    start = 0
+    stop = 0
+    for cam_id, ray_id, nb_cells in cam_ray_ids_info:
+        stop += nb_cells
+        cam_ray_ids[start:stop, 0] = cam_id
+        cam_ray_ids[start:stop, 1] = ray_id
+        start += nb_cells
+
+    assert stop == nb_cells_all
+
+    return cam_ray_ids
+
+
 def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
 
     t_start = perf_counter()
 
     cells_all = []
-    cam_ray_ids_all = []
+    cam_ray_ids_info = []
     for ray in valid_rays:
         cam_id, ray_id, bool_inside, position, vector_ray = ray
         if bool_inside:  # Ray is inside, traverse both forward and backward
@@ -429,21 +446,18 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
         nb_cells = cells.shape[0]
 
         cells_all.append(cells)
-
-        cam_id_arr = np.empty((nb_cells, 1), dtype=np.int32)
-        cam_id_arr.fill(cam_id)
-        ray_id_arr = np.empty((nb_cells, 1), dtype=np.int32)
-        ray_id_arr.fill(ray_id)
-        cam_ray_ids = np.hstack((cam_id_arr, ray_id_arr))
-
-        cam_ray_ids_all.append(cam_ray_ids)
+        cam_ray_ids_info.append((cam_id, ray_id, nb_cells))
 
     print(
         "compute_cells_traversed_by_rays done in "
         f"{perf_counter() - t_start:.2f} s"
     )
 
-    return np.vstack(cells_all), np.vstack(cam_ray_ids_all)
+    cells_all = np.vstack(cells_all)
+    nb_cells_all = cells_all.shape[0]
+    cam_ray_ids = create_cam_ray_ids(cam_ray_ids_info, nb_cells_all)
+
+    return cells_all, cam_ray_ids
 
 
 def uniquify_candidates(candidates):
@@ -522,8 +536,8 @@ def make_approved_matches(
 ):
     t_start = perf_counter()
     print(f"make_approved_matches", end="")
-    approved_matches = []  # Store approved candidates
-    matchcounter = Counter()  # Keep track of how many they are matched
+    approved_matches = []
+    match_counter = Counter()
 
     for index_candidate in indices_better_candidates:
         candidate = candidates[index_candidate]
@@ -532,12 +546,12 @@ def make_approved_matches(
         if distance < maxdistance:
             valid = True
             for idpair in candidate:
-                if matchcounter[idpair] >= max_matches_per_ray:
+                if match_counter[idpair] >= max_matches_per_ray:
                     valid = False
                     break
             if valid:
                 for idpair in candidate:
-                    matchcounter[idpair] += 1
+                    match_counter[idpair] += 1
 
                 closest_point = closest_points[index_candidate]
                 approved_matches.append([candidate, closest_point, distance])
@@ -675,7 +689,7 @@ def space_traversal_matching(
         f"match(es)/ray out of {len(candidates)} candidates",
     )
 
-    # now we want to pick the best matches first and match each ray at most
+    # now we pick the best matches first and match each ray at most
     # max_matches_per_ray
 
     approved_matches = make_approved_matches(
@@ -694,7 +708,5 @@ def space_traversal_matching(
         len(candidates),
         "candidates)",
     )
-    # print("Here are the approved matches:")
-    # print("Index, [cam_id ray_id ....] Position, Mean square distance")
 
     return approved_matches
