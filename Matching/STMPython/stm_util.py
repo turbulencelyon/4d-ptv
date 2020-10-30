@@ -6,6 +6,7 @@
 """
 
 import math
+from math import sqrt
 from collections import Counter
 import itertools
 import datetime
@@ -122,22 +123,24 @@ def find_index_bin(boundaries: "float[:]", value: "float"):
         return -1
 
 
-def vector_norm(y):
-    "Euclidean distance of a list (faster than np.linalg.norm(y)!)"
-    x = np.array(y)
-    return np.sqrt(x.dot(x))
+def vector_norm(v):
+    "Euclidean distance"
+    v0, v1, v2 = v
+    return sqrt(v0 ** 2 + v1 ** 2 + v2 ** 2)
 
 
-def square_vector_norm(y):
-    x = np.array(y)
-    return x.dot(x)
+def square_vector_norm(v):
+    v0, v1, v2 = v
+    return v0 ** 2 + v1 ** 2 + v2 ** 2
 
 
-def normalize(v):
-    norm = vector_norm(v)
+@boost
+def normalize(v: Tuple[float, float, float]):
+    v0, v1, v2 = v
+    norm = sqrt(v0 ** 2 + v1 ** 2 + v2 ** 2)
     if norm == 0:
-        return v
-    return v / norm
+        raise ValueError
+    return v0 / norm, v1 / norm, v2 / norm
 
 
 @boost
@@ -216,7 +219,7 @@ def directional_voxel_traversal(point, vector_ray, cell_bounds):
     # cell_index_point: Tuple[int, int, int]
     cell_index_point = tuple(map(find_index_bin, cell_bounds, point))
 
-    if -1 in cell_index_point or vector_norm(vector_ray) == 0:
+    if -1 in cell_index_point:
         raise ValueError(
             f"ray starts outside cell_bounds!\np: {point}\n"
             f"v: {vector_ray}\ncell index: {cell_index_point}\n"
@@ -295,7 +298,9 @@ def prepare_ray(point, v, bounds):
 
     Note that ray can be projected onto an AABB with negative 'time'...
 
-    Note: very quick so no need to optimize.
+    Note: 1.6 % of the execution time. Could be rewritten in nice Python-Numpy
+    code and accelerated with Pythran.
+
     """
 
     xmin = bounds[0][0]
@@ -307,7 +312,7 @@ def prepare_ray(point, v, bounds):
     x = point[0]
     y = point[1]
     z = point[2]
-    vector_ray = tuple(normalize(v))  # v is normalized
+    vector_ray = normalize(v)
     vx, vy, vz = vector_ray
     if xmin < x < xmax and ymin < y < ymax and zmin < z < zmax:
         return [
@@ -372,10 +377,10 @@ def make_ray_database(rays, boundingbox, log_print):
         ray_id = ray[INDEX_RAY]
         num_rays_per_camera[cam_id] += 1
 
-        pp = list(ray[2:5])
-        vv = list(ray[5:8])
+        point = tuple(ray[2:5])
+        vector = tuple(ray[5:8])
         bool_hit, bool_inside, position, vector_ray = prepare_ray(
-            pp, vv, boundingbox
+            point, vector, boundingbox
         )
 
         if bool_hit:  # If it does not miss (hit or inside)
@@ -394,12 +399,31 @@ def make_ray_database(rays, boundingbox, log_print):
     return raydb, valid_rays, num_rays_per_camera
 
 
+@boost
+def create_cam_ray_ids(
+    cam_ray_ids_info: List[Tuple[int, int, int]], nb_cells_all: int
+):
+
+    cam_ray_ids = np.empty((nb_cells_all, 2), dtype=np.int32)
+    start = 0
+    stop = 0
+    for cam_id, ray_id, nb_cells in cam_ray_ids_info:
+        stop += nb_cells
+        cam_ray_ids[start:stop, 0] = cam_id
+        cam_ray_ids[start:stop, 1] = ray_id
+        start += nb_cells
+
+    assert stop == nb_cells_all
+
+    return cam_ray_ids
+
+
 def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
 
     t_start = perf_counter()
 
     cells_all = []
-    cam_ray_ids_all = []
+    cam_ray_ids_info = []
     for ray in valid_rays:
         cam_id, ray_id, bool_inside, position, vector_ray = ray
         if bool_inside:  # Ray is inside, traverse both forward and backward
@@ -422,21 +446,18 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
         nb_cells = cells.shape[0]
 
         cells_all.append(cells)
-
-        cam_id_arr = np.empty((nb_cells, 1), dtype=np.int32)
-        cam_id_arr.fill(cam_id)
-        ray_id_arr = np.empty((nb_cells, 1), dtype=np.int32)
-        ray_id_arr.fill(ray_id)
-        cam_ray_ids = np.hstack((cam_id_arr, ray_id_arr))
-
-        cam_ray_ids_all.append(cam_ray_ids)
+        cam_ray_ids_info.append((cam_id, ray_id, nb_cells))
 
     print(
         "compute_cells_traversed_by_rays done in "
         f"{perf_counter() - t_start:.2f} s"
     )
 
-    return np.vstack(cells_all), np.vstack(cam_ray_ids_all)
+    cells_all = np.vstack(cells_all)
+    nb_cells_all = cells_all.shape[0]
+    cam_ray_ids = create_cam_ray_ids(cam_ray_ids_info, nb_cells_all)
+
+    return cells_all, cam_ray_ids
 
 
 def uniquify_candidates(candidates):
@@ -463,12 +484,14 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     # Delete duplicates, flattened list as tag
     candidates = uniquify_candidates(candidates)
 
-    log_print("Duplicate candidates removed:", len(candidates))
-    candidates = sorted(candidates)
+    nb_candidates = len(candidates)
+    log_print("Duplicate candidates removed:", nb_candidates)
 
-    # log_print("Computing match position and quality of candidates...")
-    newcandidates = []
-    for candidate in candidates:
+    closest_points = np.empty((nb_candidates, 3), dtype=float)
+    distances = np.empty(nb_candidates, float)
+    nb_cameras = np.empty(nb_candidates, int)
+
+    for index, candidate in enumerate(candidates):
         try:
             candidate[2]
         except IndexError:
@@ -484,48 +507,54 @@ def make_candidates(traversed, candidates0, raydb, log_print):
             vectors = [ray_data[1] for ray_data in rays_data]
             closest_point, distance = closest_point_to_lines(points, vectors)
 
-        newcandidates.append([candidate, closest_point, distance])
+        closest_points[index] = closest_point
+        distances[index] = distance
+        nb_cameras[index] = len(candidate)
 
-    # hullpts = [[20.0,5.0,165.0],[20.0,10.0,160.0],[20.0,10.0,165.0],[20.0,15.0,160.0],[20.0,15.0,165.0],[20.0,20.0,160.0],[20.0,20.0,165.0],[20.0,25.0,160.0],[20.0,25.0,165.0],[25.0,0.0,165.0],[25.0,0.0,170.0],[25.0,5.0,155.0],[25.0,10.0,155.0],[25.0,15.0,155.0],[25.0,20.0,155.0],[25.0,25.0,155.0],[25.0,25.0,175.0],[25.0,30.0,170.0],[25.0,35.0,155.0],[25.0,35.0,160.0],[30.0,-5.0,170.0],[30.0,0.0,160.0],[30.0,5.0,150.0],[30.0,10.0,150.0],[30.0,15.0,150.0],[30.0,20.0,150.0],[30.0,25.0,150.0],[30.0,25.0,180.0],[30.0,30.0,150.0],[30.0,30.0,180.0],[30.0,35.0,175.0],[30.0,40.0,165.0],[30.0,45.0,155.0],[35.0,-10.0,175.0],[35.0,-5.0,165.0],[35.0,-5.0,180.0],[35.0,0.0,155.0],[35.0,10.0,145.0],[35.0,15.0,145.0],[35.0,20.0,145.0],[35.0,25.0,185.0],[35.0,30.0,185.0],[35.0,35.0,150.0],[35.0,35.0,185.0],[35.0,40.0,180.0],[35.0,45.0,155.0],[35.0,45.0,170.0],[35.0,50.0,160.0],[40.0,-10.0,175.0],[40.0,-10.0,180.0],[40.0,-5.0,165.0],[40.0,0.0,155.0],[40.0,5.0,145.0],[40.0,10.0,145.0],[40.0,15.0,145.0],[40.0,30.0,150.0],[40.0,40.0,180.0],[40.0,45.0,155.0],[40.0,45.0,175.0],[40.0,50.0,160.0],[40.0,50.0,165.0],[45.0,-5.0,175.0],[45.0,0.0,165.0],[45.0,5.0,155.0],[45.0,10.0,150.0],[45.0,15.0,150.0],[45.0,40.0,180.0],[45.0,50.0,160.0],[45.0,50.0,165.0],[50.0,15.0,160.0],[50.0,20.0,160.0],[50.0,25.0,175.0],[50.0,30.0,175.0],[50.0,35.0,175.0],[50.0,45.0,165.0],[55.0,15.0,170.0],[55.0,20.0,170.0],[55.0,25.0,170.0],[55.0,30.0,170.0],[55.0,35.0,170.0],[55.0,40.0,170.0]];
-    # delaun = sps.Delaunay(hullpts)  # Define the Delaunay triangulation
-    # inq = delaun.find_simplex([x[1] for x in newcandidates])>0
-    # inq = inq.tolist();
-    # print(inq)
-    # print(type(inq))
-    # newcandidates = list(map(lambda x,y: x + [y],newcandidates,inq))
-
-    candidates = newcandidates
-    # log_print("Sorting candidate matches by quality of match...")
-    # sort by number of cameras then by error
-    candidates = sorted(candidates, key=lambda x: (-len(x[0]), x[2]))
-    # log_print("Here are upto 9999 of the best matches:")
-    # log_print("Index, [cam_id ray_id ....] Position, Mean square distance")
-    # print("num candidates:",len(candidates))
-    # for i in range(1,len(candidates),100):
-    #    print(i,candidates[i])
+    # compute `indices_better_candidates` based on `penalizations`
+    assert distances.min() > 0
+    max_distances = distances.max()
+    multiplicator = 2 ** 4
+    while multiplicator < max_distances:
+        multiplicator *= 2
+    # sort: prefer larger number of cameras and then small distances
+    penalizations = -multiplicator * nb_cameras + distances
+    indices_better_candidates = penalizations.argsort()
 
     print(f"make_candidates done in {perf_counter() - t_start:.2f} s")
 
-    return candidates
+    return candidates, closest_points, distances, indices_better_candidates
 
 
-def make_approved_matches(candidates, maxdistance, max_matches_per_ray):
+def make_approved_matches(
+    candidates,
+    closest_points,
+    distances,
+    indices_better_candidates,
+    maxdistance,
+    max_matches_per_ray,
+):
     t_start = perf_counter()
     print(f"make_approved_matches", end="")
-    approved_matches = []  # Store approved candidates
-    matchcounter = Counter()  # Keep track of how many they are matched
-    for cand in candidates:
-        if cand[2] < maxdistance:
+    approved_matches = []
+    match_counter = Counter()
+
+    for index_candidate in indices_better_candidates:
+        candidate = candidates[index_candidate]
+        distance = distances[index_candidate]
+
+        if distance < maxdistance:
             valid = True
-            for idpair in cand[0]:
-                if matchcounter[tuple(idpair)] >= max_matches_per_ray:
+            for idpair in candidate:
+                if match_counter[idpair] >= max_matches_per_ray:
                     valid = False
                     break
             if valid:
-                for idpair in cand[0]:
-                    matchcounter[tuple(idpair)] += 1
+                for idpair in candidate:
+                    match_counter[idpair] += 1
 
-                approved_matches.append(list(cand))
+                closest_point = closest_points[index_candidate]
+                approved_matches.append([candidate, closest_point, distance])
 
     print(f" (done in {perf_counter() - t_start:.2f} s)")
 
@@ -648,28 +677,36 @@ def space_traversal_matching(
 
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
 
-    candidates = make_candidates(traversed, candidates0, raydb, log_print)
+    (
+        candidates,
+        closest_points,
+        distances,
+        indices_better_candidates,
+    ) = make_candidates(traversed, candidates0, raydb, log_print)
 
     log_print(
         f"Selecting the best matches with up to {max_matches_per_ray}",
         f"match(es)/ray out of {len(candidates)} candidates",
     )
 
-    # now we want to pick the best matches first and match each ray at most
+    # now we pick the best matches first and match each ray at most
     # max_matches_per_ray
 
     approved_matches = make_approved_matches(
-        candidates, maxdistance, max_matches_per_ray
+        candidates,
+        closest_points,
+        distances,
+        indices_better_candidates,
+        maxdistance,
+        max_matches_per_ray,
     )
 
     log_print(
         "Selecting done.",
         len(approved_matches),
-        "matched found (out of",
+        "matches found (out of",
         len(candidates),
         "candidates)",
     )
-    # print("Here are the approved matches:")
-    # print("Index, [cam_id ray_id ....] Position, Mean square distance")
 
     return approved_matches
