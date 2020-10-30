@@ -17,9 +17,10 @@ How does it work?
 
 |
 
-This step has been written in ``Python`` and in ``C++``. The ``C++`` version is
-approximately 2% faster but the ``Python`` one is simpler to use. We will
-describe both ot them in the following.
+This step has been written in ``Python`` and in ``C++``. The ``Python`` version
+should be as fast as the ``C++`` one. If you track several thousands of
+particles, you should take a look at the PSMN part where we show how to
+parallelise computations.
 
 Python way
 ----------
@@ -83,10 +84,6 @@ need a quite recent C++ compiler (more details `here
 
 C++ way
 --------
-
-The ``C++`` script is approximately 2% faster than the ``Python`` one. If you
-track several thousands of particles, you should take a look at the PSMN part
-where we show how to parallelise computations.
 
 .. warning:: Compilation of C++ code
 
