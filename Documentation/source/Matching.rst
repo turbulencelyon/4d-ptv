@@ -25,47 +25,6 @@ parallelise computations.
 Python way
 ----------
 
-The function which do the matching is ``stm.py``. It takes 11 arguments:
-
-- **filename**                 : name of the file containing rays,
-- **minframes**                : number of the first frame,
-- **maxframes**                : number of the last frame,
-- **cam_match**                : minimum number of crossing rays to get a match,
-- **maxdistance**              : max distance allowed for a match,
-- **nx,ny,nz**                 : number of voxels in each direction,
-- **maxmatchesperray**         : number of matches/ray,
-- **boundingbox (optional)**   : corresponds to the volume visualized [[minX,maxX],[minY,maxY],[minZ,maxZ]],
-- **neighbours (optional)**    : number of illuminated voxels: due to noise, when a ray crosses a voxel, it is possible that in reality, the ray crosses a close voxel. neighbours indicates how many neighbours we consider in reality when a ray crosses a voxel. =6 by defaut.
-
-.. warning::
-    Spatial unit:
-        The distance unit is fixed during calibration step. Then all distances like maxdistance, boundingbox or particles positions are given in the same unit.
-
-    Ghost particles:
-        On the scheme, one can see orange particles. These particles does not correspond to real particles but they correspond to rays crossing points. These particles are called *ghost particles*. Setting the parameter *maxmatchesperray* to one can limit the number of these particles. However, if *maxmatchesperray* is equal to 1, then when two particles overlap, only one will be detected. That's why we prefere to set *maxmatchesperray* to 2. As ghost particles completely disapear between two successive frames, they will be suppressed by the tracking.
-
-    Interest of boundingbox:
-        On the scheme, there is two rays crosses outside of the measurement box (it is the yellow disk). As the boundingbox gives the space limits of measurement volume, this yellow particle is not consider as a match.
-
-.. note::
-    To run matching on test Data, in a terminal
-
-    .. code-block:: bash
-
-        python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 10 2 0.2 400 400 250 2 ## To test !!! Check it !!!!
-
-    To open the result file, use in a matlab terminal
-
-    .. code-block:: matlab
-
-        [matches,other,params] = readmatches("My4DPTVInstallationPath/Documentation/TestData/Processed_DATA/MyExperiment/matched_cam2_1-100.dat")
-
-The function creates in the rays folder a file called ``matched_cam{cam_match}_{minframe}-{maxframe}.dat`` which contains all matched points. That kind of file can be openned with the function `readmatches.m` which provides 3 arrays:
-
-- **matches** which is a nmatches x 5 matrix [FrameNumber, x, y, z, Error]
-- **other** which is a nmatches x ? matrix [NumberofRaysUsedInMatch, cam0ID,ray0ID,cam1ID,rays1ID,...]
-- **params** whose *params.nframes* gives number of frames and *params.nmatches* provides number of matches.
-
 Installation
 ~~~~~~~~~~~~
 
@@ -81,6 +40,87 @@ The Python dependencies can be installed with::
 You first need to compile the code with the command ``make``. Note that you
 need a quite recent C++ compiler (more details `here
 <https://fluidsim.readthedocs.io/en/latest/install.html#about-using-pythran-to-compile-functions>`_).
+
+Usage
+~~~~~
+
+The documentation of the script can be obtained with ``./stm.py -h``. It gives:
+
+.. code-block::
+
+    usage: stm.py [-h] path_file start_frame stop_frame cam_match max_distance nx ny nz max_matches_per_ray [bounding_box]
+
+    Compute matches from rays projecting them into voxels.
+
+    Example:
+
+    export PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
+    ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
+
+    or (to specify the limit of the visualized region):
+
+    ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2 "[[-140, 140], [-150, 150], [5, 170]]"
+
+    positional arguments:
+    path_file            Path towards the file containing the ray data.
+    start_frame          Index of the first frame.
+    stop_frame           Index of the last frame + 1.
+    cam_match            Minimum number of rays crossing to get a match.
+    max_distance         Maximum distance allowed for a match.
+    nx                   Number of voxels in the x direction
+    ny                   Number of voxels in the y direction
+    nz                   Number of voxels in the z direction
+    max_matches_per_ray  Maximum number of matches/ray
+    bounding_box         Corresponds to the volume visualized [[minX, maxX], [minY, maxY], [minZ, maxZ]]
+
+    optional arguments:
+    -h, --help           show this help message and exit
+
+To run matching on test Data, in a terminal
+
+.. code-block:: bash
+
+    python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 10 2 0.2 400 400 250 2
+
+The script creates in the rays folder a file called
+``matched_cam{cam_match}_{minframe}-{maxframe}.dat`` which contains all matched
+points.
+
+This kind of file can be openned with the Matlab function `readmatches.m`
+
+.. code-block:: matlab
+
+    [matches,other,params] = readmatches("My4DPTVInstallationPath/Documentation/TestData/Processed_DATA/MyExperiment/matched_cam2_1-100.dat")
+
+- **matches** which is a nmatches x 5 matrix [FrameNumber, x, y, z, Error]
+- **other** which is a nmatches x ? matrix [NumberofRaysUsedInMatch, cam0ID,ray0ID,cam1ID,rays1ID,...]
+- **params** whose *params.nframes* gives number of frames and *params.nmatches* provides number of matches.
+
+.. warning::
+
+    Spatial unit:
+
+        The distance unit is fixed during calibration step. Then all distances
+        like maxdistance, bounding_box or particles positions are given in the
+        same unit.
+
+    Ghost particles:
+
+        On the scheme, one can see orange particles. These particles does not
+        correspond to real particles but they correspond to rays crossing
+        points. These particles are called *ghost particles*. Setting the
+        parameter *maxmatchesperray* to one can limit the number of these
+        particles. However, if *maxmatchesperray* is equal to 1, then when two
+        particles overlap, only one will be detected. That's why we prefere to
+        set *maxmatchesperray* to 2. As ghost particles completely disappear
+        between two successive frames, they will be suppressed by the tracking.
+
+    Interest of bounding_box:
+
+        On the scheme, there is two rays crosses outside of the measurement box
+        (it is the yellow disk). As the bounding_box gives the space limits of
+        measurement volume, this yellow particle is not consider as a match.
+
 
 C++ way
 --------
