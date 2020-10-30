@@ -465,12 +465,14 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     # Delete duplicates, flattened list as tag
     candidates = uniquify_candidates(candidates)
 
-    log_print("Duplicate candidates removed:", len(candidates))
-    candidates = sorted(candidates)
+    nb_candidates = len(candidates)
+    log_print("Duplicate candidates removed:", nb_candidates)
 
-    # log_print("Computing match position and quality of candidates...")
-    newcandidates = []
-    for candidate in candidates:
+    closest_points = np.empty((nb_candidates, 3), dtype=float)
+    distances = np.empty(nb_candidates, float)
+    nb_cameras = np.empty(nb_candidates, int)
+
+    for index, candidate in enumerate(candidates):
         try:
             candidate[2]
         except IndexError:
@@ -486,41 +488,54 @@ def make_candidates(traversed, candidates0, raydb, log_print):
             vectors = [ray_data[1] for ray_data in rays_data]
             closest_point, distance = closest_point_to_lines(points, vectors)
 
-        newcandidates.append([candidate, closest_point, distance])
+        closest_points[index] = closest_point
+        distances[index] = distance
+        nb_cameras[index] = len(candidate)
 
-    # hullpts = [[20.0,5.0,165.0],[20.0,10.0,160.0],[20.0,10.0,165.0],[20.0,15.0,160.0],[20.0,15.0,165.0],[20.0,20.0,160.0],[20.0,20.0,165.0],[20.0,25.0,160.0],[20.0,25.0,165.0],[25.0,0.0,165.0],[25.0,0.0,170.0],[25.0,5.0,155.0],[25.0,10.0,155.0],[25.0,15.0,155.0],[25.0,20.0,155.0],[25.0,25.0,155.0],[25.0,25.0,175.0],[25.0,30.0,170.0],[25.0,35.0,155.0],[25.0,35.0,160.0],[30.0,-5.0,170.0],[30.0,0.0,160.0],[30.0,5.0,150.0],[30.0,10.0,150.0],[30.0,15.0,150.0],[30.0,20.0,150.0],[30.0,25.0,150.0],[30.0,25.0,180.0],[30.0,30.0,150.0],[30.0,30.0,180.0],[30.0,35.0,175.0],[30.0,40.0,165.0],[30.0,45.0,155.0],[35.0,-10.0,175.0],[35.0,-5.0,165.0],[35.0,-5.0,180.0],[35.0,0.0,155.0],[35.0,10.0,145.0],[35.0,15.0,145.0],[35.0,20.0,145.0],[35.0,25.0,185.0],[35.0,30.0,185.0],[35.0,35.0,150.0],[35.0,35.0,185.0],[35.0,40.0,180.0],[35.0,45.0,155.0],[35.0,45.0,170.0],[35.0,50.0,160.0],[40.0,-10.0,175.0],[40.0,-10.0,180.0],[40.0,-5.0,165.0],[40.0,0.0,155.0],[40.0,5.0,145.0],[40.0,10.0,145.0],[40.0,15.0,145.0],[40.0,30.0,150.0],[40.0,40.0,180.0],[40.0,45.0,155.0],[40.0,45.0,175.0],[40.0,50.0,160.0],[40.0,50.0,165.0],[45.0,-5.0,175.0],[45.0,0.0,165.0],[45.0,5.0,155.0],[45.0,10.0,150.0],[45.0,15.0,150.0],[45.0,40.0,180.0],[45.0,50.0,160.0],[45.0,50.0,165.0],[50.0,15.0,160.0],[50.0,20.0,160.0],[50.0,25.0,175.0],[50.0,30.0,175.0],[50.0,35.0,175.0],[50.0,45.0,165.0],[55.0,15.0,170.0],[55.0,20.0,170.0],[55.0,25.0,170.0],[55.0,30.0,170.0],[55.0,35.0,170.0],[55.0,40.0,170.0]];
-    # delaun = sps.Delaunay(hullpts)  # Define the Delaunay triangulation
-    # inq = delaun.find_simplex([x[1] for x in newcandidates])>0
-    # inq = inq.tolist();
-    # newcandidates = list(map(lambda x,y: x + [y],newcandidates,inq))
-
-    candidates = newcandidates
-    # sort by number of cameras then by error
-    # PA: quite slow (~6%) and inefficient
-    candidates = sorted(candidates, key=lambda x: (-len(x[0]), x[2]))
+    # compute `indices_better_candidates` based on `penalizations`
+    assert distances.min() > 0
+    max_distances = distances.max()
+    multiplicator = 2 ** 4
+    while multiplicator < max_distances:
+        multiplicator *= 2
+    # sort: prefer larger number of cameras and then small distances
+    penalizations = -multiplicator * nb_cameras + distances
+    indices_better_candidates = penalizations.argsort()
 
     print(f"make_candidates done in {perf_counter() - t_start:.2f} s")
 
-    return candidates
+    return candidates, closest_points, distances, indices_better_candidates
 
 
-def make_approved_matches(candidates, maxdistance, max_matches_per_ray):
+def make_approved_matches(
+    candidates,
+    closest_points,
+    distances,
+    indices_better_candidates,
+    maxdistance,
+    max_matches_per_ray,
+):
     t_start = perf_counter()
     print(f"make_approved_matches", end="")
     approved_matches = []  # Store approved candidates
     matchcounter = Counter()  # Keep track of how many they are matched
-    for cand in candidates:
-        if cand[2] < maxdistance:
+
+    for index_candidate in indices_better_candidates:
+        candidate = candidates[index_candidate]
+        distance = distances[index_candidate]
+
+        if distance < maxdistance:
             valid = True
-            for idpair in cand[0]:
-                if matchcounter[tuple(idpair)] >= max_matches_per_ray:
+            for idpair in candidate:
+                if matchcounter[idpair] >= max_matches_per_ray:
                     valid = False
                     break
             if valid:
-                for idpair in cand[0]:
-                    matchcounter[tuple(idpair)] += 1
+                for idpair in candidate:
+                    matchcounter[idpair] += 1
 
-                approved_matches.append(list(cand))
+                closest_point = closest_points[index_candidate]
+                approved_matches.append([candidate, closest_point, distance])
 
     print(f" (done in {perf_counter() - t_start:.2f} s)")
 
@@ -643,7 +658,12 @@ def space_traversal_matching(
 
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
 
-    candidates = make_candidates(traversed, candidates0, raydb, log_print)
+    (
+        candidates,
+        closest_points,
+        distances,
+        indices_better_candidates,
+    ) = make_candidates(traversed, candidates0, raydb, log_print)
 
     log_print(
         f"Selecting the best matches with up to {max_matches_per_ray}",
@@ -654,13 +674,18 @@ def space_traversal_matching(
     # max_matches_per_ray
 
     approved_matches = make_approved_matches(
-        candidates, maxdistance, max_matches_per_ray
+        candidates,
+        closest_points,
+        distances,
+        indices_better_candidates,
+        maxdistance,
+        max_matches_per_ray,
     )
 
     log_print(
         "Selecting done.",
         len(approved_matches),
-        "matched found (out of",
+        "matches found (out of",
         len(candidates),
         "candidates)",
     )
