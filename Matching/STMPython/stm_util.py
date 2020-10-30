@@ -295,7 +295,9 @@ def prepare_ray(point, v, bounds):
 
     Note that ray can be projected onto an AABB with negative 'time'...
 
-    Note: very quick so no need to optimize.
+    Note: 1.6 % of the execution time. Could be rewritten in nice Python-Numpy
+    code and accelerated with Pythran.
+
     """
 
     xmin = bounds[0][0]
@@ -490,19 +492,12 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     # delaun = sps.Delaunay(hullpts)  # Define the Delaunay triangulation
     # inq = delaun.find_simplex([x[1] for x in newcandidates])>0
     # inq = inq.tolist();
-    # print(inq)
-    # print(type(inq))
     # newcandidates = list(map(lambda x,y: x + [y],newcandidates,inq))
 
     candidates = newcandidates
-    # log_print("Sorting candidate matches by quality of match...")
     # sort by number of cameras then by error
+    # PA: quite slow (~6%) and inefficient
     candidates = sorted(candidates, key=lambda x: (-len(x[0]), x[2]))
-    # log_print("Here are upto 9999 of the best matches:")
-    # log_print("Index, [cam_id ray_id ....] Position, Mean square distance")
-    # print("num candidates:",len(candidates))
-    # for i in range(1,len(candidates),100):
-    #    print(i,candidates[i])
 
     print(f"make_candidates done in {perf_counter() - t_start:.2f} s")
 
