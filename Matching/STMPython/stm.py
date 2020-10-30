@@ -183,31 +183,31 @@ def parse_args():
     parser.add_argument(
         "path_file",
         type=str,
-        help="Path towards the file containing the ray data.",
+        help="Path towards the file containing the ray data",
     )
 
     parser.add_argument(
         "start_frame",
         type=int,
-        help="Index of the first frame.",
+        help="Index of the first frame",
     )
 
     parser.add_argument(
         "stop_frame",
         type=int,
-        help="Index of the last frame + 1.",
+        help="Index of the last frame + 1",
     )
 
     parser.add_argument(
         "cam_match",
         type=int,
-        help="Minimum number of rays crossing to get a match.",
+        help="Minimum number of rays crossing to get a match",
     )
 
     parser.add_argument(
         "max_distance",
         type=float,
-        help="Maximum distance allowed for a match.",
+        help="Maximum distance allowed for a match",
     )
 
     parser.add_argument(

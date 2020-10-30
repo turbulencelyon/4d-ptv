@@ -44,7 +44,8 @@ need a quite recent C++ compiler (more details `here
 Usage
 ~~~~~
 
-The documentation of the script can be obtained with ``./stm.py -h``. It gives:
+The documentation of the script can be obtained with ``./stm.py -h``, which
+gives:
 
 .. code-block::
 
@@ -62,11 +63,11 @@ The documentation of the script can be obtained with ``./stm.py -h``. It gives:
     ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2 "[[-140, 140], [-150, 150], [5, 170]]"
 
     positional arguments:
-    path_file            Path towards the file containing the ray data.
-    start_frame          Index of the first frame.
-    stop_frame           Index of the last frame + 1.
-    cam_match            Minimum number of rays crossing to get a match.
-    max_distance         Maximum distance allowed for a match.
+    path_file            Path towards the file containing the ray data
+    start_frame          Index of the first frame
+    stop_frame           Index of the last frame + 1
+    cam_match            Minimum number of rays crossing to get a match
+    max_distance         Maximum distance allowed for a match
     nx                   Number of voxels in the x direction
     ny                   Number of voxels in the y direction
     nz                   Number of voxels in the z direction
