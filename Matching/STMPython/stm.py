@@ -172,7 +172,7 @@ def compute_stm(
     print("Finished")
 
     elapsed = perf_counter() - tstart
-    print(f"Elapsed time: {elapsed:.2f} s")
+    print(f"Elapsed time:       {elapsed:.2f} s")
     print(f"Elapsed time/frame: {elapsed / (stop_frames - start_frame):.2f} s")
 
 

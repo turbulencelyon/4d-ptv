@@ -38,13 +38,33 @@ This package requires Python 3.8. The code is accelerated with `Transonic
 <https://pythran.readthedocs.io>`_. Some functions are transpiled to C++ to be
 very efficient.
 
-The Python dependencies can be installed with::
-
-  pip install numpy transonic pythran
-
 You first need to compile the code with the command ``make``. Note that you
 need a quite recent C++ compiler (more details `here
 <https://fluidsim.readthedocs.io/en/latest/install.html#about-using-pythran-to-compile-functions>`_).
+
+With a file ``~/.pythranrc`` containing
+
+.. code-block::
+
+    [compiler]
+    CXX=clang++
+    CC=clang
+    blas=openblas
+
+one can create a dedicated conda environment and compile the code with:
+
+.. code-block:: bash
+
+    conda create -y -n env-4dptv python=3.8 pythran transonic clangdev "blas-devel[build=*openblas]"
+    conda activate env-4dptv
+    make
+
+To check that it works, you can then run::
+
+    make test
+    make bench
+    # for this one, the C++ code has to be compiled
+    make bench_cpp
 
 Usage
 ~~~~~
