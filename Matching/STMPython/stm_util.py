@@ -533,11 +533,17 @@ def make_approved_matches(
     indices_better_candidates,
     max_distance,
     max_matches_per_ray,
+    min_distance_matches_1ray,
 ):
     t_start = perf_counter()
-    print(f"make_approved_matches", end="")
+    print(f"make_approved_matches")
     approved_matches = []
     match_counter = Counter()
+    approved_matches_ray = {}
+    removed_because_sphere = 0
+
+    if min_distance_matches_1ray is not None:
+        min_distance2_matches_1ray = min_distance_matches_1ray ** 2
 
     for index_candidate in indices_better_candidates:
         candidate = candidates[index_candidate]
@@ -549,14 +555,47 @@ def make_approved_matches(
                 if match_counter[idpair] >= max_matches_per_ray:
                     valid = False
                     break
+
+            closest_point = closest_points[index_candidate]
+            if (
+                min_distance_matches_1ray is not None
+                and idpair in approved_matches_ray
+            ):
+                x0, y0, z0 = closest_point
+                other_closest_points = approved_matches_ray[idpair]
+                for other_closest_point in other_closest_points:
+                    x1 = other_closest_point[0]
+                    y1 = other_closest_point[1]
+                    z1 = other_closest_point[2]
+                    # fmt: off
+                    distance2 = (x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2
+                    # fmt: on
+                    if distance2 < min_distance2_matches_1ray:
+                        valid = False
+                        removed_because_sphere += 1
+                        break
+
             if valid:
                 for idpair in candidate:
                     match_counter[idpair] += 1
 
-                closest_point = closest_points[index_candidate]
+                if min_distance_matches_1ray is not None:
+                    other_closest_points = approved_matches_ray.setdefault(
+                        idpair, []
+                    )
+                    other_closest_points.append(closest_point)
+
                 approved_matches.append([candidate, closest_point, distance])
 
-    print(f" (done in {perf_counter() - t_start:.2f} s)")
+    if min_distance_matches_1ray is not None:
+        print(
+            "Minimum distance for multiple matches per ray is "
+            f"{min_distance_matches_1ray}\n"
+            "# of Matches removed because of minimum distance for multiple "
+            f"matches per ray: {removed_because_sphere}"
+        )
+
+    print(f"make_approved_matches (done in {perf_counter() - t_start:.2f} s)")
 
     return approved_matches
 
@@ -571,6 +610,7 @@ def space_traversal_matching(
     max_matches_per_ray=2,
     max_distance=999.9,
     neighbours=6,
+    min_distance_matches_1ray=None,
     logfile="",
 ):
 
@@ -699,6 +739,7 @@ def space_traversal_matching(
         indices_better_candidates,
         max_distance,
         max_matches_per_ray,
+        min_distance_matches_1ray,
     )
 
     log_print(
