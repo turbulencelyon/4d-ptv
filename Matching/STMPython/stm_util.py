@@ -526,6 +526,22 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     return candidates, closest_points, distances, indices_better_candidates
 
 
+def is_valid_distance_matches_1ray(
+    candidate, closest_point, approved_matches_ray, min_distance2_matches_1ray
+):
+    x0, y0, z0 = closest_point
+    for _, ray_id in candidate:
+        if ray_id in approved_matches_ray:
+            other_closest_points = approved_matches_ray[ray_id]
+            for x1, y1, z1 in other_closest_points:
+                # fmt: off
+                distance2 = (x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2
+                # fmt: on
+                if distance2 < min_distance2_matches_1ray:
+                    return False
+    return True
+
+
 def make_approved_matches(
     candidates,
     closest_points,
@@ -551,39 +567,32 @@ def make_approved_matches(
 
         if distance < max_distance:
             valid = True
-            for idpair in candidate:
-                if match_counter[idpair] >= max_matches_per_ray:
+            for id_pair in candidate:
+                if match_counter[id_pair] >= max_matches_per_ray:
                     valid = False
                     break
 
             closest_point = closest_points[index_candidate]
-            if (
-                min_distance_matches_1ray is not None
-                and idpair in approved_matches_ray
-            ):
-                x0, y0, z0 = closest_point
-                other_closest_points = approved_matches_ray[idpair]
-                for other_closest_point in other_closest_points:
-                    x1 = other_closest_point[0]
-                    y1 = other_closest_point[1]
-                    z1 = other_closest_point[2]
-                    # fmt: off
-                    distance2 = (x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2
-                    # fmt: on
-                    if distance2 < min_distance2_matches_1ray:
-                        valid = False
-                        removed_because_sphere += 1
-                        break
+
+            if min_distance_matches_1ray is not None:
+                if not is_valid_distance_matches_1ray(
+                    candidate,
+                    closest_point,
+                    approved_matches_ray,
+                    min_distance2_matches_1ray,
+                ):
+                    valid = False
+                    removed_because_sphere += 1
 
             if valid:
-                for idpair in candidate:
-                    match_counter[idpair] += 1
-
-                if min_distance_matches_1ray is not None:
-                    other_closest_points = approved_matches_ray.setdefault(
-                        idpair, []
-                    )
-                    other_closest_points.append(closest_point)
+                for id_pair in candidate:
+                    match_counter[id_pair] += 1
+                    if min_distance_matches_1ray is not None:
+                        ray_id = id_pair[1]
+                        other_closest_points = approved_matches_ray.setdefault(
+                            ray_id, []
+                        )
+                        other_closest_points.append(closest_point)
 
                 approved_matches.append([candidate, closest_point, distance])
 
