@@ -16,6 +16,9 @@ bench_old:
 bench_cpp:
 	../STMCpp/STM -i $(PATH_INPUT_DATA) -f 1 -c 2 -d 0.2 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
 
+bench_min-distance-matches-1ray:
+	./stm.py $(PATH_INPUT_DATA) 1 2 2 0.2 400 400 250 2 -md1r 2
+
 profile:
 	python profile_simple.py
 

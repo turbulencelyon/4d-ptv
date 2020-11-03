@@ -15,7 +15,7 @@ from time import perf_counter
 
 import numpy as np
 
-from transonic import boost, Tuple, List, Array
+from transonic import boost, Tuple, List, Array, Optional
 
 from util_groupby import make_groups_by_cell_cam
 
@@ -461,7 +461,7 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
 
 
 def uniquify_candidates(candidates):
-    return list(set(candidates))
+    return list(list(candidate) for candidate in set(candidates))
 
 
 def make_candidates(traversed, candidates0, raydb, log_print):
@@ -542,17 +542,16 @@ def is_valid_distance_matches_1ray(
     return True
 
 
-def make_approved_matches(
-    candidates,
-    closest_points,
-    distances,
-    indices_better_candidates,
-    max_distance,
-    max_matches_per_ray,
-    min_distance_matches_1ray,
+def kernel_make_approved_matches(
+    candidates: List[List[Tuple[int, int]]],
+    closest_points: "float[:,:]",
+    distances: "float[]",
+    indices_better_candidates: "int[]",
+    max_distance: float,
+    max_matches_per_ray: int,
+    min_distance_matches_1ray: Optional[float] = None,
 ):
-    t_start = perf_counter()
-    print(f"make_approved_matches")
+
     approved_matches = []
     match_counter = Counter()
     approved_matches_ray = {}
@@ -562,39 +561,69 @@ def make_approved_matches(
         min_distance2_matches_1ray = min_distance_matches_1ray ** 2
 
     for index_candidate in indices_better_candidates:
-        candidate = candidates[index_candidate]
         distance = distances[index_candidate]
 
-        if distance < max_distance:
-            valid = True
+        if distance >= max_distance:
+            continue
+
+        candidate = candidates[index_candidate]
+
+        valid = True
+        for id_pair in candidate:
+            if match_counter[id_pair] >= max_matches_per_ray:
+                valid = False
+                break
+
+        closest_point = closest_points[index_candidate]
+
+        if (
+            min_distance_matches_1ray is not None
+            and not is_valid_distance_matches_1ray(
+                candidate,
+                closest_point,
+                approved_matches_ray,
+                min_distance2_matches_1ray,
+            )
+        ):
+            valid = False
+            removed_because_sphere += 1
+
+        if valid:
             for id_pair in candidate:
-                if match_counter[id_pair] >= max_matches_per_ray:
-                    valid = False
-                    break
+                match_counter[id_pair] += 1
+                if min_distance_matches_1ray is not None:
+                    ray_id = id_pair[1]
+                    other_closest_points = approved_matches_ray.setdefault(
+                        ray_id, []
+                    )
+                    other_closest_points.append(closest_point)
 
-            closest_point = closest_points[index_candidate]
+            approved_matches.append([candidate, closest_point, distance])
 
-            if min_distance_matches_1ray is not None:
-                if not is_valid_distance_matches_1ray(
-                    candidate,
-                    closest_point,
-                    approved_matches_ray,
-                    min_distance2_matches_1ray,
-                ):
-                    valid = False
-                    removed_because_sphere += 1
+    return approved_matches, removed_because_sphere
 
-            if valid:
-                for id_pair in candidate:
-                    match_counter[id_pair] += 1
-                    if min_distance_matches_1ray is not None:
-                        ray_id = id_pair[1]
-                        other_closest_points = approved_matches_ray.setdefault(
-                            ray_id, []
-                        )
-                        other_closest_points.append(closest_point)
 
-                approved_matches.append([candidate, closest_point, distance])
+def make_approved_matches(
+    candidates,
+    closest_points,
+    distances,
+    indices_better_candidates,
+    max_distance,
+    max_matches_per_ray,
+    min_distance_matches_1ray=None,
+):
+    t_start = perf_counter()
+    print(f"make_approved_matches")
+
+    approved_matches, removed_because_sphere = kernel_make_approved_matches(
+        candidates,
+        closest_points,
+        distances,
+        indices_better_candidates,
+        max_distance,
+        max_matches_per_ray,
+        min_distance_matches_1ray,
+    )
 
     if min_distance_matches_1ray is not None:
         print(
