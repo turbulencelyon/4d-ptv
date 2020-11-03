@@ -2,13 +2,15 @@ Matching
 =========
 
 How does it work?
-    Let's consider again only one particle. If we have *N* cameras and if the particle is detected by *n* cameras, we have now :math:n lines in space. To determine the exact position of the particle, we have to find the closest point to these *n* lines simultaneously. The simpler method for that would be to take a line and to compute its distance to all other lines. Then taking the closest ones one gets particle position. However, this method would be very computing demanding.
+    The "STM" algorithm used in this module have been developed by Mickael Bourgoin and Sander Huisman, and are described
+    in a dedicated paper :cite:`bourgoin2020`. The main advantages over other methods is that the output does not depend
+    on the order of the input, and scales well with the number of cameras.
+
+    Let's consider again only one particle. If we have *N* cameras and if the particle is detected by *n* cameras, we have now :math:`n` lines in space. To determine the exact position of the particle, we have to find the closest point to these *n* lines simultaneously. The simpler method for that would be to take a line and to compute its distance to all other lines. Then taking the closest ones one gets particle position. However, this method would be very computing demanding.
 
     That's why we follow another method. As a picture is divided into pixels, we divide 3D space into small cubes called **voxel**. Then, all lines are drawn in this space. For each voxel, the distance between lines which crosses this voxel is computed. If the lines are close enough, a particle is created there. The space division into voxels decreases a lot computations because we only need to compute distance between lines crossing the voxel, which represents a very small number of computations comparing to compute the distance to all other lines.
 
     Besides, very powerful algorithm have been developped to drawn lines on pictures for television application. So the numerical cost to draw lines in a voxel space is very low.
-
-    To get more information about matching step, see `Using ray-traversal for 3D particle matching in the context of particle tracking velocimetry <https://arxiv.org/abs/2003.12135>`_.
 
 .. figure:: Figures/Matching.png
     :width: 60%
@@ -21,6 +23,9 @@ This step has been written in ``Python`` and in ``C++``. The ``Python`` version
 should be as fast as the ``C++`` one. If you track several thousands of
 particles, you should take a look at the PSMN part where we show how to
 parallelise computations.
+
+.. bibliography:: Matching.bib
+   :all:
 
 Python way
 ----------
