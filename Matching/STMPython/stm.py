@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-Compute matches from rays projecting them into voxels.
+Space Traversal Matching: compute matches from rays projecting them into voxels.
 
 Example:
 
@@ -10,7 +10,6 @@ Example:
 or (to specify the limits of the visualized region):
 
   ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2 "[[-140, 140], [-150, 150], [5, 170]]"
-
 
 """
 import os
@@ -70,6 +69,7 @@ def compute_stm(
     nz,
     max_matches_per_ray,
     bounding_box=[[-140, 140], [-150, 150], [5, 170]],
+    min_distance_matches_1ray=None,
     neighbours=6,
 ):
     """
@@ -133,6 +133,7 @@ def compute_stm(
                 neighbours=neighbours,
                 logfile=filelog,
                 max_distance=max_distance,
+                min_distance_matches_1ray=min_distance_matches_1ray,
             )
         except ValueError:
             tb = traceback.format_exc()
@@ -171,7 +172,7 @@ def compute_stm(
     print("Finished")
 
     elapsed = perf_counter() - tstart
-    print(f"Elapsed time: {elapsed:.2f} s")
+    print(f"Elapsed time:       {elapsed:.2f} s")
     print(f"Elapsed time/frame: {elapsed / (stop_frames - start_frame):.2f} s")
 
 
@@ -245,6 +246,14 @@ def parse_args():
         default="[[-140, 140], [-150, 150], [5, 170]]",
     )
 
+    parser.add_argument(
+        "-md1r",
+        "--min-distance-matches-1ray",
+        type=float,
+        default=None,
+        help="Minimum distance for multiple matches per ray",
+    )
+
     args = parser.parse_args()
     bounding_box_as_str = args.bounding_box
     args.bounding_box = eval(bounding_box_as_str)
@@ -268,6 +277,7 @@ def main():
         args.nz,
         args.max_matches_per_ray,
         args.bounding_box,
+        args.min_distance_matches_1ray,
     )
 
 

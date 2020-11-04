@@ -38,13 +38,33 @@ This package requires Python 3.8. The code is accelerated with `Transonic
 <https://pythran.readthedocs.io>`_. Some functions are transpiled to C++ to be
 very efficient.
 
-The Python dependencies can be installed with::
-
-  pip install numpy transonic pythran
-
 You first need to compile the code with the command ``make``. Note that you
 need a quite recent C++ compiler (more details `here
 <https://fluidsim.readthedocs.io/en/latest/install.html#about-using-pythran-to-compile-functions>`_).
+
+With a file ``~/.pythranrc`` containing
+
+.. code-block::
+
+    [compiler]
+    CXX=clang++
+    CC=clang
+    blas=openblas
+
+one can create a dedicated conda environment and compile the code with:
+
+.. code-block:: bash
+
+    conda create -y -n env-4dptv python=3.8 pythran transonic clangdev "blas-devel[build=*openblas]"
+    conda activate env-4dptv
+    make
+
+To check that it works, you can then run::
+
+    make test
+    make bench
+    # for this one, the C++ code has to be compiled
+    make bench_cpp
 
 Usage
 ~~~~~
@@ -54,33 +74,37 @@ gives:
 
 .. code-block::
 
-    usage: stm.py [-h] path_file start_frame stop_frame cam_match max_distance nx ny nz max_matches_per_ray [bounding_box]
+    usage: stm.py [-h] [-md1r MIN_DISTANCE_MATCHES_1RAY]
+                path_file start_frame stop_frame cam_match max_distance nx ny nz
+                max_matches_per_ray [bounding_box]
 
-    Compute matches from rays projecting them into voxels.
+    Space Traversal Matching: compute matches from rays projecting them into voxels.
 
     Example:
 
     export PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
     ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
 
-    or (to specify the limit of the visualized region):
+    or (to specify the limits of the visualized region):
 
     ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2 "[[-140, 140], [-150, 150], [5, 170]]"
 
     positional arguments:
-    path_file            Path towards the file containing the ray data
-    start_frame          Index of the first frame
-    stop_frame           Index of the last frame + 1
-    cam_match            Minimum number of rays crossing to get a match
-    max_distance         Maximum distance allowed for a match
-    nx                   Number of voxels in the x direction
-    ny                   Number of voxels in the y direction
-    nz                   Number of voxels in the z direction
-    max_matches_per_ray  Maximum number of matches/ray
-    bounding_box         Corresponds to the volume visualized [[minX, maxX], [minY, maxY], [minZ, maxZ]]
+    path_file             Path towards the file containing the ray data
+    start_frame           Index of the first frame
+    stop_frame            Index of the last frame + 1
+    cam_match             Minimum number of rays crossing to get a match
+    max_distance          Maximum distance allowed for a match
+    nx                    Number of voxels in the x direction
+    ny                    Number of voxels in the y direction
+    nz                    Number of voxels in the z direction
+    max_matches_per_ray   Maximum number of matches/ray
+    bounding_box          Corresponds to the volume visualized [[minX, maxX], [minY, maxY], [minZ, maxZ]]
 
     optional arguments:
-    -h, --help           show this help message and exit
+    -h, --help            show this help message and exit
+    -md1r MIN_DISTANCE_MATCHES_1RAY, --min-distance-matches-1ray MIN_DISTANCE_MATCHES_1RAY
+                            Minimum distance for multiple matches per ray
 
 To run matching on test Data, in a terminal
 

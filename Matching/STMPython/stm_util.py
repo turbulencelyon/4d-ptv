@@ -526,6 +526,143 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     return candidates, closest_points, distances, indices_better_candidates
 
 
+def is_valid_distance_matches_1ray(
+    candidate, closest_point, approved_matches_ray, min_distance2_matches_1ray
+):
+    x0, y0, z0 = closest_point
+    for _, ray_id in candidate:
+        if ray_id in approved_matches_ray:
+            other_closest_points = approved_matches_ray[ray_id]
+            for x1, y1, z1 in other_closest_points:
+                # fmt: off
+                distance2 = (x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2
+                # fmt: on
+                if distance2 < min_distance2_matches_1ray:
+                    return False
+    return True
+
+
+def kernel_make_approved_matches(
+    candidates: List[Tuple[Tuple[np.int32, np.int32]]],
+    closest_points: "float[:,:]",
+    distances: "float[]",
+    indices_better_candidates: "int64[]",
+    max_distance: float,
+    max_matches_per_ray: int,
+):
+
+    approved_matches = []
+    match_counter = Counter()
+
+    for index_candidate in indices_better_candidates:
+        distance = distances[index_candidate]
+
+        if distance >= max_distance:
+            continue
+
+        candidate = candidates[index_candidate]
+
+        valid = True
+        for id_pair in candidate:
+            if match_counter[id_pair] >= max_matches_per_ray:
+                valid = False
+                break
+
+        if valid:
+            closest_point = closest_points[index_candidate]
+            for id_pair in candidate:
+                match_counter[id_pair] += 1
+
+            approved_matches.append((candidate, closest_point, distance))
+
+    return approved_matches
+
+
+def increment_counter(counter, key):
+    try:
+        counter[key] += 1
+    except KeyError:
+        counter[key] = 1
+
+
+def get_counter_value(counter, key):
+    try:
+        return counter[key]
+    except KeyError:
+        return 0
+
+
+@boost
+def kernel_make_approved_matches__min_distance_matches_1ray(
+    candidates: List[List[Tuple[np.int32, np.int32]]],
+    closest_points: "float[:,:]",
+    distances: "float[]",
+    indices_better_candidates: "int64[]",
+    max_distance: float,
+    max_matches_per_ray: int,
+    min_distance_matches_1ray: float,
+):
+
+    approved_matches = []
+    approved_closest_points = []
+    approved_distances = []
+
+    # match_counter = dict()
+    id_pair = (0, 0)
+    match_counter = {id_pair: 0}
+
+    approved_matches_ray = {}
+    removed_because_sphere = 0
+
+    min_distance2_matches_1ray = min_distance_matches_1ray ** 2
+
+    for index_candidate in indices_better_candidates:
+        distance = distances[index_candidate]
+
+        if distance >= max_distance:
+            continue
+
+        candidate = candidates[index_candidate]
+
+        valid = True
+        for id_pair in candidate:
+            nb_matches = get_counter_value(match_counter, id_pair)
+            if nb_matches >= max_matches_per_ray:
+                valid = False
+                break
+
+        closest_point = closest_points[index_candidate]
+
+        if not is_valid_distance_matches_1ray(
+            candidate,
+            closest_point,
+            approved_matches_ray,
+            min_distance2_matches_1ray,
+        ):
+            valid = False
+            removed_because_sphere += 1
+
+        if valid:
+            for id_pair in candidate:
+                increment_counter(match_counter, id_pair)
+
+                ray_id = id_pair[1]
+                approved_matches_ray.setdefault(ray_id, [])
+                other_closest_points = approved_matches_ray[ray_id]
+                other_closest_points.append(closest_point)
+
+            approved_matches.append(candidate)
+            approved_closest_points.append(closest_point)
+            approved_distances.append(distance)
+
+    return (
+        approved_matches,
+        approved_closest_points,
+        approved_distances,
+        removed_because_sphere,
+    )
+
+
 def make_approved_matches(
     candidates,
     closest_points,
@@ -533,32 +670,55 @@ def make_approved_matches(
     indices_better_candidates,
     max_distance,
     max_matches_per_ray,
+    min_distance_matches_1ray=None,
 ):
     t_start = perf_counter()
-    print(f"make_approved_matches", end="")
-    approved_matches = []
-    match_counter = Counter()
+    print(f"make_approved_matches")
 
-    for index_candidate in indices_better_candidates:
-        candidate = candidates[index_candidate]
-        distance = distances[index_candidate]
+    if min_distance_matches_1ray is not None:
 
-        if distance < max_distance:
-            valid = True
-            for idpair in candidate:
-                if match_counter[idpair] >= max_matches_per_ray:
-                    valid = False
-                    break
-            if valid:
-                for idpair in candidate:
-                    match_counter[idpair] += 1
+        candidates = list(list(candidate) for candidate in set(candidates))
 
-                closest_point = closest_points[index_candidate]
-                approved_matches.append([candidate, closest_point, distance])
+        (
+            approved_matches,
+            approved_closest_points,
+            approved_distances,
+            removed_because_sphere,
+        ) = kernel_make_approved_matches__min_distance_matches_1ray(
+            candidates,
+            closest_points,
+            distances,
+            indices_better_candidates,
+            max_distance,
+            max_matches_per_ray,
+            min_distance_matches_1ray,
+        )
 
-    print(f" (done in {perf_counter() - t_start:.2f} s)")
+        approved_matches_full = [
+            (candidate, closest_point, distance)
+            for candidate, closest_point, distance in zip(
+                approved_matches, approved_closest_points, approved_distances
+            )
+        ]
+        print(
+            "Minimum distance for multiple matches per ray is "
+            f"{min_distance_matches_1ray}\n"
+            "# of Matches removed because of minimum distance for multiple "
+            f"matches per ray: {removed_because_sphere}"
+        )
+    else:
+        approved_matches_full = kernel_make_approved_matches(
+            candidates,
+            closest_points,
+            distances,
+            indices_better_candidates,
+            max_distance,
+            max_matches_per_ray,
+        )
 
-    return approved_matches
+    print(f"make_approved_matches (done in {perf_counter() - t_start:.2f} s)")
+
+    return approved_matches_full
 
 
 def space_traversal_matching(
@@ -571,6 +731,7 @@ def space_traversal_matching(
     max_matches_per_ray=2,
     max_distance=999.9,
     neighbours=6,
+    min_distance_matches_1ray=None,
     logfile="",
 ):
 
@@ -699,6 +860,7 @@ def space_traversal_matching(
         indices_better_candidates,
         max_distance,
         max_matches_per_ray,
+        min_distance_matches_1ray,
     )
 
     log_print(
