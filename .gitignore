@@ -8,3 +8,17 @@ Documentation/build
 
 # Temporary files
 *.swp
+
+**/__pycache__/*
+
+Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/matched*
+Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/*.log
+
+Matching/STMCpp/*.h5
+Matching/STMPython/*.h5
+Matching/STMPython/*.dat
+
+*.pstats
+profile.png
+
+**/__pythran__
