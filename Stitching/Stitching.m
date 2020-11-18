@@ -1,4 +1,4 @@
-function StitchedTraj = Stitching(session,ManipName,FileName,dfmax,dxmax,dvmax,lmin,window_length,poly_order,framerate)
+function StitchedTraj = Stitching(session,ManipName,FileName,dfmax,dxmax,dvmax,lmin)
 % Create automatic filepath, load data and call for stitchTracks function.
 % To use after track3d.m function.
 % 04/2020 - David Dumont

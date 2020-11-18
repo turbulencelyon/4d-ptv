@@ -20,16 +20,18 @@ How does it work?
     General sketch of tracking. Two trajectories are shown here. Particles position for 5 successive frames are represented by crosses and their colour determines the time evolution.
     
 
-The function ``track3d.m`` was made for that and requires 8 arguments:
+The function ``track3d.m`` was made for that and requires 10 arguments:
 
 - **session**   : Paths to the architecture root
 - **ManipName** : Name of the experiment
-- **FileName**  : name of the matched file without its extension (without .dat)
-- **maxdist**   : maximum travelled distance between two successive frames
-- **lmin**      : minimum length of a trajectory (number of frames)
+- **FileName**  : Name of the matched file without its extension (without .dat)
+- **NbFrame**   : Number of frame in the file
+- **maxdist**   : Maximum travelled distance between two successive frames
+- **lmin**      : Minimum length of a trajectory (number of frames)
 - **flag_pred** : 1 for predictive tracking, 0 otherwise
-- **npriormax** : maximum number of prior frames used for predictive tracking
+- **npriormax** : Maximum number of prior frames used for predictive tracking
 - **flag_conf** : 1 for conflict solving, 0 otherwise
+- **minFrame**  : (optional) number of the first frame. Default = 1.
 
 .. figure:: Figures/InOutputtrack3d.png
     :width: 80%

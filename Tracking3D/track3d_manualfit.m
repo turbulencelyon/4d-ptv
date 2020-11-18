@@ -214,8 +214,8 @@ for k=1:length(fields) %for each field
 end
 % saving of tracking parameters
 for param=["maxdist","lmin","flag_pred","npriormax","flag_conf"]
-    h5create(sprintf('%stracks_%s.h5',folderout,FileName),['/trackingparameters/' param],1)
-    h5write(sprintf('%stracks_%s.h5',folderout,FileName),['/trackingparameters/' param],eval(param))
+    h5create(sprintf('%stracks_%s.h5',folderout,FileName),['/trackingparameters/' char(param)],1)
+    h5write(sprintf('%stracks_%s.h5',folderout,FileName),['/trackingparameters/' char(param)],eval(param))
 end
 
 

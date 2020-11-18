@@ -1,4 +1,4 @@
-function matchesbis = h52matches(filepath,NbFrames,Version)
+function matches = h52matches(filepath,NbFrames, minFrame,Version)
 
 % 04/2020 - David Dumont (TO UPDATE)
 %
@@ -11,10 +11,16 @@ function matchesbis = h52matches(filepath,NbFrames,Version)
 % _________________________________________________________________
 % INPUT
 % filepath : path to .h5 file (without .h5)
+% NbFrames : number of frame within the file
+% minFrame : number of the first frame (default = 1)
 %
 % OUTPUT
 % tracks   : array provided by STM
 % _________________________________________________________________
+
+if ~exist('minFrame','var')
+    minFrame = 1;
+end
 
 if ~exist('Version','var')
     Version='V2';
@@ -23,12 +29,17 @@ end
 %% New version 
 % Lecture of tracks
 if Version=='V2'
-    matchesbis=[]
+    matches=[]
     filename = sprintf('%s.h5',filepath)
     for i=1:NbFrames
         dataset=sprintf('/frame%d_xyze',i);
-        matches = h5read(filename,dataset);
-        matchesbis=vertcat(matchesbis,matches);
+        data = h5read(filename,dataset);
+        if i==1
+            matches = cat(2,ones(length(data),1)*(i+minFrame-1),data);
+        else
+            matches1 = cat(2,ones(length(data),1)*(i+minFrame-1),data);
+            matches=cat(1,matches,matches1);
+        end
     end
 end
 
@@ -37,6 +48,6 @@ if Version=='V1'
     filename = sprintf('%s.h5',filepath);
 
 % Lecture of tracks
-    matchesbis = h5read(filename,'/tracks');
+    matches = h5read(filename,'/tracks');
 end 
 end
