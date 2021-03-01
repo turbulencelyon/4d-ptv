@@ -31,7 +31,7 @@ def special_argsort(cells: "int32[:,:]"):
 
     cells_as_ints_sorted = cells_as_ints[indices]
 
-    return indices, np.array(np.diff(cells_as_ints_sorted), dtype=np.bool)
+    return indices, np.array(np.diff(cells_as_ints_sorted), dtype=bool)
 
 
 def group_by_cam(group):
