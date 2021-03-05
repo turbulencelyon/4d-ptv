@@ -51,7 +51,16 @@ for kframe=StartFrame:Step:EndFrame
     end    
     compteur = compteur + 1;
 end
-BackgroundMean = uint16(BackgroundMean/compteur);
+
+%We save the background in the same format than the pictures
+PictureFormat = class(imread(ImgName));
+if strcmp(PictureFormat, 'uint8')
+    BackgroundMean = uint8(BackgroundMean/compteur);
+elseif strcmp(PictureFormat, 'uint16')
+    BackgroundMean = uint16(BackgroundMean/compteur);
+else
+    fprintf("Pictures have to be either 8 or 16-bits");
+end
 
 save(sprintf("%s%s/Background_cam%d.mat",folderout,ManipName,CamNum),'BackgroundMax','BackgroundMean','BackgroundMin')
 

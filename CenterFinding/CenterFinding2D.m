@@ -7,6 +7,7 @@ function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,
 % and session.output_path)
 %%%     ManipName                  : Name of the folder experiment
 %%%     NumCam                     : number of the camera studied
+%%%     firstFrame                 : number of the first frame
 %%%     nframes                    : total number of pictures
 %%%     th                         : threshold
 %%%     sz                         : typical size of the particles

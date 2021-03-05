@@ -54,7 +54,7 @@ Once the background is calculated, you can launch ``CenterFinding2D.m``. This fu
 - **session**                   : structure containing paths of MyPath folders,
 - **ManipName**                 : name of the experiment,
 - **NumCam**                    : camera number,
-- **firstFrame**				: the first frame to treat,
+- **firstFrame**                : the first frame to treat,
 - **nframes**                   : the last frames to treat,
 - **th**                        : threshold value to detect points,
 - **sz**                        : typical point diameter (in pixels),
@@ -76,9 +76,9 @@ The threshold and point diameter values depend on the camera treated. To set the
     
         session.input_path = "My4DPTVInstallationPath/Documentation/TestData/";  % My4DPTVInstallationPath has to be adapted !!!
         session.output_path = "My4DPTVInstallationPath/Documentation/TestData/";
-        CC1 = CenterFinding2D(session,"MyExperiment",1,100,6000,3) # for camera 1
-        CC2 = CenterFinding2D(session,"MyExperiment",2,100,6000,3) # for camera 2
-        CC3 = CenterFinding2D(session,"MyExperiment",3,100,6000,3) # for camera 3
+        CC1 = CenterFinding2D(session,"MyExperiment",1,1,100,6000,3) # for camera 1
+        CC2 = CenterFinding2D(session,"MyExperiment",2,1,100,6000,3) # for camera 2
+        CC3 = CenterFinding2D(session,"MyExperiment",3,1,100,6000,3) # for camera 3
 
 
 .. warning::
@@ -99,13 +99,13 @@ It is possible to compile ``CenterFinding2D.m`` function to run it outside a MAT
             
         An executable file ``submission_center_finding`` and a bash file ``run_submission_center_finding.sh`` will appear in the same folder.
 
-	2. Modifie the line 30 of the file "run_submission_center_finding" to add the path of the executable file like this:
-	
+    2. Modifie the line 30 of the file "run_submission_center_finding" to add the path of the executable file like this:
+    
         .. code-block:: bash
 
               eval "/MyPath/Submision_center_finding" $args
               
-	
+    
     3. To run it in your machine:
 
         .. code-block:: bash
@@ -113,31 +113,31 @@ It is possible to compile ``CenterFinding2D.m`` function to run it outside a MAT
             sh run_submission_center_finding.sh $MCRROOT "ManipName" "CamNum" "FirstFrame" "Nframes" "Th" "Size" "Session_INPUT" "Session_OUTPUT"
             
 .. warning:: 
-	
-	Even if some parameters are numbers (integers or floats), you need to tipe them as string by using the quote ".
-	
-	
+    
+    Even if some parameters are numbers (integers or floats), you need to tipe them as string by using the quote ".
+    
+    
 If you want to launch the function at the PSMN and use parallelisation, use the file ``submission_CenterFinding.sh``:
-	
-	1. Change the parameters at the begining of the script to use your own parameters 
-	
+    
+    1. Change the parameters at the begining of the script to use your own parameters 
+    
         .. code-block:: bash            
             
-			ManipName="MyExperiment"	
-			CamNum=3								#The camera on wich you want to find the center 
-			FirstFrame=300							#The first frame (usefull if you don't start at one)
-			Nframes=36000							#The final frame to treat 
-			Th=6500									#Threshold to detec a part (it have to be tune with the function CenterFinding.m and with test=true 
-			Size=5									#The size of a part (in pixel)
-			Session_INPUT="/MyWorkspace/"		#The path of the DATA directory, where all the image are 
-			Session_OUTPUT="/MyWorkspace/"		#The path of the PROCESSED_DATA directory, where the centercamk.mat will be saved
+            ManipName="MyExperiment"    
+            CamNum=3                                #The camera on wich you want to find the center 
+            FirstFrame=300                          #The first frame (usefull if you don't start at one)
+            Nframes=36000                           #The final frame to treat 
+            Th=6500                                 #Threshold to detec a part (it have to be tune with the function CenterFinding.m and with test=true 
+            Size=5                                  #The size of a part (in pixel)
+            Session_INPUT="/MyWorkspace/"       #The path of the DATA directory, where all the image are 
+            Session_OUTPUT="/MyWorkspace/"      #The path of the PROCESSED_DATA directory, where the centercamk.mat will be saved
 
-			CompileFileDir="/home/eberna07/Stage_EB_2020/4d-ptv/CenterFinding"			#The directory where the file "runSubmision_center_finding.sh" is 
-			LOG_path="/MyWorkspace/MyExperiment/CenterFinding_LOG"		#log directory (warning: the directory has to be created before launch the code)
-			OUT_path="/MyWorkspace/MyExperiment/CenterFinding_OUT"		#matlab output (warning: the directory has to be created before launch the code)
+            CompileFileDir="/home/eberna07/Stage_EB_2020/4d-ptv/CenterFinding"          #The directory where the file "runSubmision_center_finding.sh" is 
+            LOG_path="/MyWorkspace/MyExperiment/CenterFinding_LOG"      #log directory (warning: the directory has to be created before launch the code)
+            OUT_path="/MyWorkspace/MyExperiment/CenterFinding_OUT"      #matlab output (warning: the directory has to be created before launch the code)
 
         
-	2. Launch this function in a terminal doing:
+    2. Launch this function in a terminal doing:
   
         .. code-block:: bash
             
