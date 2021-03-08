@@ -28,5 +28,3 @@ for kplan = 1:Nplans
     XYZ(kplan,3,I==0) = NaN;
 end
     [P, V] = fit3Dline(XYZ);
-    
-     [x_rw,y_rw,z_rw] = transformPointsInverse(Trw2px,posimg(:,1),posimg(:,2));
