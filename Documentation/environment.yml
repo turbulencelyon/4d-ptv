@@ -3,3 +3,4 @@ name: ptv_doc
 dependencies:
     - pip:
         - sphinxcontrib-matlabdomain
+        - sphinxcontrib-bibtex
