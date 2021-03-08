@@ -8,8 +8,10 @@ How to split Stitching processing into many jobs on the PSMN?
 
 When the tracking has been made by several jobs, it is necessary to reconnect trajectories in between successive files and then we can do *classic* stitching. There are one or two steps depending on the total number of frame of your experiment. The stitching is quitte time consuming so if you have many frames (more than 20000) for your experiment, it is clever to do parallel stitching on a reduced number of frames. Doing that, you will get several packets of reconnected trajectories. The second step allows you to reconnect these packets into only one. If you have few frames in your experiment (less than 10000) it is worth to run only one stitching job working on all frames.
 
-.. example::
-    If you have 50000 frames per experiment and that the tracking was done on packets of 1000 frames, you can run 25 jobs doing stitching on packets of 2000 frames using ```Stitching_psmnA.m` function and then reconnect all the packet into one using ```Stitching_psmnB.m```. 
+If you have 50000 frames per experiment and that the tracking was done on
+packets of 1000 frames, you can run 25 jobs doing stitching on packets of 2000
+frames using ```Stitching_psmnA.m` function and then reconnect all the packet
+into one using ```Stitching_psmnB.m```. 
 
 The first step is realised by ``stitchTracksSides.m``. But the user has just to use ``Stitching_psmnA.m`` function which does everything for him. This function takes 11 arguments:
 
