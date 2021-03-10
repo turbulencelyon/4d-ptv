@@ -1,4 +1,4 @@
-function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,Test,BackgroundType,format)
+function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,Test,PartialSave,BackgroundType,format)
 %%% Detect particles position in picture and provides their positions in
 %%% px.
 %--------------------------------------------------------------------------------
@@ -12,19 +12,24 @@ function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,
 %%%     th                         : threshold
 %%%     sz                         : typical size of the particles
 %%%     Test                       : true-> test mode, false-> classic mode (optional)
-%%%     BackgroundType (optional)  : determine which background is substracted to pictures. By defaut is equal to BackgroundMean,
-%%%     format (optional)          : picture names. By defaut it is '%05d.tif'.
+%%%     BackgroundType (optional)  : determine which background is substracted to pictures. By defaut is equal to BackgroundMean
+%%%     format (optional)          : picture names. By defaut it is '%05d.tif'
+%%%     PartialSave (optional)     : if PartialSave>0 it remove background
+%%%     for the first PartialSave frames and save them in
+%%%     folderout/TestThreshold. Can be usefull to check if a particle
+%%%     moves.
 %%%     The beginning of picture names has to be %ManipName_cam%CamNum_%format
 %--------------------------------------------------------------------------------
+% 2020-2021 : D. Dumont (adapted from M. Bourgoin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 close all
 
-%% Test if Test exist or not
+%% Test if Test exists or not
 if ~exist('Test','var')
     Test=false;
 end
 
-%% Test if BackgroundType exist or not
+%% Test if BackgroundType exists or not
 if ~exist('BackgroundType','var')
     BackgroundType="BackgroundMean";
 end
@@ -34,14 +39,19 @@ if ~exist('format','var')
     format='%05d.tif';
 end
 
+%% Test if PartialSave exists or not
+if ~exist('PartialSave','var')
+    PartialSave=0;
+end
+
 %% Definition of folders
 fprintf(ManipName);
-folderin = sprintf("%sDATA/%s/cam%d",session.input_path,ManipName,CamNum)
-folderout = sprintf("%sProcessed_DATA/%s",session.output_path,ManipName)
-BackgroundFile = sprintf("%s/Background_cam%d.mat",folderout,CamNum);
+folderin = fullfile(session.input_path, 'DATA', ManipName, ['cam' num2str(CamNum)])
+folderout = fullfile(session.output_path, 'Processed_DATA', ManipName)
+BackgroundFile = fullfile(folderout,['Background_cam' num2str(CamNum) '.mat']);
 
 %% Find centers
-if exist(folderout,'dir')==0
+if ~isfolder(folderout)
     mkdir(folderout);
 end
 
@@ -55,15 +65,17 @@ elseif BackgroundType=="BackgroundMin"
     Background=BackgroundMin;
 end
 
+BaseName = join([ManipName '_cam' num2str(CamNum) '_' format],''); % base name of pictures
 if ~Test
     for kframe=firstFrame:nframes
         disp(kframe);
-        ImgName = sprintf(join(['%s/%s_cam%d_' format],''),folderin, ManipName, CamNum, kframe);
+        ImgName = fullfile(folderin,sprintf(BaseName, kframe));
         fprintf("%s \n",ImgName);
+        
         Im = imread(ImgName) - Background;
         Nx = size(Im,2);
         Ny = size(Im,1);
-
+        
         out=pkfnd(Im,th,sz); % Provides intensity maxima positions
         npar = size(out,1);
         
@@ -88,13 +100,30 @@ if ~Test
     end
     
     %% Centers saving into a .mat file
-    save(sprintf("%s/centers_cam%d.mat",folderout,CamNum),"CC",'nframes','-v7.3')
+    save(fullfile(folderout,['centers_cam' num2str(CamNum) '.mat']),"CC",'nframes','-v7.3')
 else
+    if PartialSave>0
+        fprintf("Let's remove the background from the first PartialSave frames and save them")
+        folderSave = fullfile(folderout,'Test_Threshold',['cam' num2str(CamNum)]);
+        if ~isfolder(folderSave)
+            mkdir(folderSave)
+        end
+        for kframe=firstFrame:firstFrame+PartialSave
+            disp(kframe);
+            ImgName = fullfile(folderin,sprintf(BaseName, kframe));
+            fprintf("%s \n",ImgName);
+
+            Im = imread(ImgName) - Background;
+            imwrite(Im,fullfile(folderSave,['img_' num2str(kframe) '.tif']))
+       end
+    end
     kframe=1
-    ImgName = sprintf(join(['%s/%s_cam%d_' format],''),folderin, ManipName, CamNum, kframe);
+    ImgName = fullfile(folderin,sprintf(BaseName, kframe));
     fprintf("%s \n",ImgName);
     Im = imread(ImgName) - Background;
     figure("NumberTitle","Off","Name",sprintf("RAW picture, cam %d, frame %d",CamNum,kframe))
+    hax1 = axes;
+    hold on
     imshow(imread(ImgName))
     colormap gray
     figure("NumberTitle","Off","Name",sprintf("%s, cam %d",BackgroundType,CamNum))
@@ -119,8 +148,9 @@ else
 %     end
 
     %% Tracé de l'histogramme des intensités pour définir le seuil
-    fig = figure('NumberTitle','Off','Name','Intensity histogram');
+    figure('NumberTitle','Off','Name','Intensity histogram');
     histogram(Im,1000)
+    xline(th,'r')
     xlabel("Intensity")
     ylabel("Number")
     set(gca, 'XScale', 'log')
@@ -154,10 +184,12 @@ else
 
     %% Let's plot picture and detected points on a graph !!! Be careful the vertical axis is reversed compared to reality !!!
     figure('NumberTitle','Off','Name',sprintf("frame %d, %d detected points",kframe,numel(x)))
+    hax2 = axes;
     imshow(Im)
     colormap gray
     
     hold on
-    plot(flip(x),flip(y),'r+')
+    plot(hax1,flip(x),flip(y),'r+')
+    plot(hax2,flip(x),flip(y),'r+')
 end
 

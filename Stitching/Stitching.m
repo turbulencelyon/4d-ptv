@@ -22,8 +22,8 @@ function StitchedTraj = Stitching(session,ManipName,FileName,dfmax,dxmax,dvmax,l
 % framerate     : framerate of the experiment.
 % ------------------------------------------------------------------------------------------
 
-datapath = sprintf('%sProcessed_DATA/%s/%s',session.input_path,ManipName,FileName);
-filepath = sprintf('%sProcessed_DATA/%s/stiched_%s_dfmax%d',session.output_path,ManipName,FileName,dfmax);
+datapath = fullfile(session.input_path,'Processed_DATA',ManipName,FileName);
+filepath = fullfile(session.output_path,'Processed_DATA', ManipName, ['stiched_' FileName '_dfmax' dfmax]);
 
 %% Data loading
 traj = h52tracks(datapath);

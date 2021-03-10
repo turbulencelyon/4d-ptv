@@ -16,6 +16,7 @@ function BackgroundComputation(session,ManipName,CamNum,StartFrame,EndFrame ,Ste
 %%%     The beginning of picture names has to be
 %%%     %ManipName_cam%CamNum_%format.
 %------------------------------------------------------------------------------
+% 2020-2021 : D. Dumont (adapted from M. Bourgoin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % By defaut format='%05d.tif'
@@ -24,8 +25,13 @@ if ~exist('format','var')
 end
 
 %% Definitions of folders
-folderin = sprintf("%sDATA/",session.input_path);
-folderout = sprintf("%sProcessed_DATA/",session.output_path);
+folderin = fullfile(session.input_path, 'DATA', ManipName, ['cam' num2str(CamNum)])
+folderout = fullfile(session.output_path, 'Processed_DATA', ManipName)
+
+%% Creation of output Folder if it does not exist
+if ~isfolder(folderout) 
+    mkdir(folderout)
+end
 
 % If Step is not define take a step such as the average will be done over
 % 1000 pictures.
@@ -35,9 +41,10 @@ elseif (~ exist("Step","var") && (EndFrame-StartFrame)<1000)
     Step = 1;
 end
 
+BaseName = join([ManipName '_cam' num2str(CamNum) '_' format],'');
 compteur = 0;
 for kframe=StartFrame:Step:EndFrame
-    ImgName = sprintf(join(['%s/%s_cam%d_' format],''),folderin, ManipName, CamNum, kframe);
+    ImgName = fullfile(folderin,sprintf(BaseName, kframe));
     fprintf("%s \n",ImgName);
     
     if kframe==StartFrame
@@ -53,15 +60,15 @@ for kframe=StartFrame:Step:EndFrame
 end
 
 %We save the background in the same format than the pictures
-PictureFormat = class(imread(ImgName));
-if strcmp(PictureFormat, 'uint8')
+Picture = imread(ImgName);
+if isa(Picture, 'uint8')
     BackgroundMean = uint8(BackgroundMean/compteur);
-elseif strcmp(PictureFormat, 'uint16')
+elseif isa(Picture, 'uint16')
     BackgroundMean = uint16(BackgroundMean/compteur);
 else
     fprintf("Pictures have to be either 8 or 16-bits");
 end
 
-save(sprintf("%s%s/Background_cam%d.mat",folderout,ManipName,CamNum),'BackgroundMax','BackgroundMean','BackgroundMin')
+save(fullfile(folderout,['Background_cam' num2str(CamNum) '.mat']),'BackgroundMax','BackgroundMean','BackgroundMin')
 
 

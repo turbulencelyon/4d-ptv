@@ -8,6 +8,8 @@ function submission_Centers2Rays(kcam,Calib,ManipName,FirstFrame,Session_INPUT,S
 %   Calib       : Path of the calibration file
 %   camID       : List of camera numbers. ex: [1,2,3] if you have 3 cameras numbered 1,2,3 respectively.
 % ------------------------------------------------------------------------------------------
+% 2020 E. Bernard
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 session.input_path=Session_INPUT;
 session.output_path=Session_OUTPUT;

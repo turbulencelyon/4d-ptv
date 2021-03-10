@@ -30,7 +30,7 @@ end
 % Lecture of tracks
 if Version=='V2'
     matches=[]
-    filename = sprintf('%s.h5',filepath)
+    filename = fullfile([filepath '.h5'])
     for i=1:NbFrames
         dataset=sprintf('/frame%d_xyze',i);
         data = h5read(filename,dataset);
@@ -45,7 +45,7 @@ end
 
 %% Old version
 if Version=='V1'
-    filename = sprintf('%s.h5',filepath);
+    filename = fullfile([filepath '.h5'])
 
 % Lecture of tracks
     matches = h5read(filename,'/tracks');

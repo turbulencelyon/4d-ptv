@@ -59,6 +59,7 @@ Once the background is calculated, you can launch ``CenterFinding2D.m``. This fu
 - **th**                        : threshold value to detect points,
 - **sz**                        : typical point diameter (in pixels),
 - **Test (optional)**           : true/false. If true enters in test mode,
+- **PartialSave**               : if >0 remove background from the first PartialSave pictures and save them in folderout/TestThreshold. Can be usefull to check if a particle moves,
 - **BackgroundType (optional)** : determine which background is substracted to pictures. By defaut is equal to BackgroundMean,
 - **format (optional)**         : pictures name format : equals to '%05d.tif' by defaut. The beginning of picture names has to be '%ManipName_cam%CamNum_%format'. 
 

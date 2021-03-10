@@ -1,21 +1,20 @@
 function [P,V]=Centers2Rays(session,ManipName,Calib,camID,Ttype)
-%% TO DO: - split this function in several to run as many jobs as camera and create an unique file later !!!
-%         - h5 output
-%   For a given set of calibration interpolanst and center files with
-%   pixel positions, determines the corresponding rays of light.
-%   camID is an array containing the IDs of the cameras center files to be
-%   processed (for instance camID=[0 1 2] for a 3 cameras tracking
-%   experiment).
+%%   To DO     - h5 output
+%%%   For a given set of calibration points and center files with
+%%%   pixel positions, determines the corresponding rays of light.
+%%%   Save rays into a .mat file and in rays.dat file.
 %----------------------------------------------------------------------------------------
-% INPUT Parameters:
-%   session     : Path to the achitecture root (2 fields: session.input_path
-% and session.output_path)
-%   ManipName   : Name of the folder experiment
+%%% INPUT Parameters:
+%%%   session     : Path to the achitecture root (2 fields: session.input_path
+%%% and session.output_path)
+%%%   ManipName   : Name of the folder experiment
 %   Calib       : Path of the calibration file
 %   camID       : List of camera numbers. ex: [1,2,3] if you have 3 cameras numbered 1,2,3 respectively.
 %   Ttype       : Type of the calibration used. 'T1'-> Linear
 %   transformation, 'T3' -> Cubic transformation.
 % ------------------------------------------------------------------------------------------
+% 2020-2021 : D. Dumont (adapted from M. Bourgoin)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % If Ttype does not exist it is set to T1 (linear transformation)
 if ~exist('Ttype','var')
@@ -23,20 +22,20 @@ if ~exist('Ttype','var')
 end
 
 %% Definition of folders
-folderin = sprintf("%sProcessed_DATA/%s",session.input_path,ManipName);
-folderout = sprintf("%sProcessed_DATA/%s",session.output_path,ManipName);
+folderin = fullfile(session.input_path, 'Processed_DATA', ManipName);
+folderout = fullfile(session.output_path, 'Processed_DATA', ManipName);
+if ~isfolder(folderout)
+    mkdir(folderout);
+end
 
-% Load calibration file (which contains calibration interpolants for all
+% Load calibration file (which contains calibration transformations for all
 % cameras).
 %% Charger la calib
 fprintf("Loading calibration file... \n")
 load(Calib,'calib');
 
 % Open results ray file
-fileRays=sprintf('%s/rays.dat',folderout);
-if ~isfolder(folderout)
-    mkdir(folderout);
-end
+fileRays=fullfile(folderout,'rays.dat');
 
 fid=fopen(fileRays,'w');
 
@@ -44,14 +43,12 @@ fprintf("Let's start loop over cameras...")
 % Loop over cameras
 for kcam=1:numel(camID)
     % select calibration for camera camID(kcam)
-    % old version with interpolant
-    % calibNcam=calibInterp(camID(kcam)+1).calibInterp;
-    
+
     % new version without interpolant
     calibNcam=calib(:,kcam);
     
     % load centers for camera camID(kcam)
-    fileCenters=sprintf("%s/centers_cam%d.mat",folderin, camID(kcam));
+    fileCenters=fullfile(folderin,['centers_cam' num2str(camID(kcam)) '.mat']);
     [CC,nframes] = readCentersMAT(fileCenters); 
     
     % loop over frames
@@ -78,7 +75,7 @@ end
 
 % Writing data in matlab file
 fprintf("Writing data in matlab file in progress...")
-save(sprintf('%s/rays.mat',folderout),'datacam','-v7.3')
+save(fullfile(folderout,'rays.mat'),'datacam','-v7.3')
 
 %%
 % write results in file

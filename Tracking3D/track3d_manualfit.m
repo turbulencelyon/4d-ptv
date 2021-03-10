@@ -206,16 +206,17 @@ disp([num2str(kk) ' trajectories longer than ' num2str(lmin) ' frames (from ' nu
 fprintf('Saving to .h5 file in %s\n', folderout);
 
 %save in .h5
+FileSaveName = fullfile(folderout,['tracks_' FileName '.h5']);
 fields=fieldnames(traj);
 for k=1:length(fields) %for each field
     fieldk=fields{k};
-    h5create(sprintf('%stracks_%s.h5',folderout,FileName),['/' fieldk],[length(vertcat(traj.(fieldk))) 1],'ChunkSize',[1000 1],'Deflate',9)
-    h5write(sprintf('%stracks_%s.h5',folderout,FileName),['/' fieldk],vertcat(traj.(fieldk)))
+    h5create(FileSaveName,['/' fieldk],[length(vertcat(traj.(fieldk))) 1],'ChunkSize',[1000 1],'Deflate',9)
+    h5write(FileSaveName,['/' fieldk],vertcat(traj.(fieldk)))
 end
 % saving of tracking parameters
 for param=["maxdist","lmin","flag_pred","npriormax","flag_conf"]
-    h5create(sprintf('%stracks_%s.h5',folderout,FileName),['/trackingparameters/' char(param)],1)
-    h5write(sprintf('%stracks_%s.h5',folderout,FileName),['/trackingparameters/' char(param)],eval(param))
+    h5create(FileSaveName,['/trackingparameters/' char(param)],1)
+    h5write(FileSaveName,['/trackingparameters/' char(param)],eval(param))
 end
 
 

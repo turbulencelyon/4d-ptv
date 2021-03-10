@@ -248,7 +248,7 @@ toc
 
 %write results
 fprintf("Saving array...")
-save(sprintf("%s/tracks2_%s.mat",folderout,FileName),'tracks','ltraj','-v7.3');
+save(fullfile(folderout,['tracks2_' FileName '.mat']),'tracks','ltraj','-v7.3');
 
 
 % i0=tracks(:,5); %index of trajectories
@@ -280,7 +280,7 @@ end
 
 disp([num2str(kt) ' trajectories longer than ' num2str(lmin) ' frames (from ' num2str(length(vertcat(traj.x))) ' matches)']);
 disp(['Saving to .mat file in ' folderout]);
-save(sprintf("%s/tracks2_%s.mat",folderout,FileName),'traj','-append','-v7.3');
+save(fullfile(folderout,['tracks2_' FileName '.mat']),'traj','-append','-v7.3');
 disp('Tracking complete!');
 elapsed=toc;
 disp(['Elapsed time: ',num2str(elapsed,'%.2f'),'s']);

@@ -24,6 +24,8 @@ function [tracks,traj]=track3d(session,ManipName,FileName,NbFrame,maxdist,lmin,f
 % traj(kt).z      : z-position
 % traj(kt).nmatch : element indices in tracks
 % tracks          : trajectory raw data
+%
+% 2020-2021 D. Dumont (adapted from B. Bourgoin)
 % ____________________________________________________________________________
 
 if ~exist('minFrame','var')
@@ -31,15 +33,15 @@ if ~exist('minFrame','var')
 end
 
 % Folder name creation
-folderin = sprintf("%sProcessed_DATA/%s/",session.input_path,ManipName);
-folderout = sprintf("%sProcessed_DATA/%s/",session.output_path,ManipName);
+folderin = fullfile(session.input_path, 'Processed_DATA', ManipName);
+folderout = fullfile(session.output_path, 'Processed_DATA', ManipName);
 
 if ~isfolder(folderout)
     makedirs(folderout)
 end
 
 % disp('Loading matches...');
-filename = sprintf("%s%s",folderin,FileName);
+filename = fullfile(folderin,FileName);
 data = h52matches(filename,NbFrame,minFrame);
 
 %% Call for track3d_manualfit function
