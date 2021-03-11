@@ -214,8 +214,8 @@ How to compile ``STM.cpp`` file ?
     .. code-block:: bash
 
         cd MyPath/4D-PTV/Matching/STMCpp/
-        ./STM -i ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat -f 10 -c 2 -d 0.2 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170
-
+        ./STM -i ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat -o ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/ -f 10 -c 2 -d 0.2 -s 1 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
+ 
 .. seealso::
 
     STM help:

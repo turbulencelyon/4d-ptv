@@ -31,14 +31,14 @@ The function ``track3d_psmn.m`` computes trajectory like previously but it loads
 As previously, trajectories are saved in a file */Parallel/Tracking/Tracks/tracks_{minframe}-{maxframe}.h5*. This file can also be read with `readmatches.m` function.
 
 It is better to compile ``track3d_psmn.m`` function.
-	1. Again, if you don't have the compiled file yet, compile the function ``submission_Tracking.m``
-	
-		.. code-block:: matlab
-			
-			mcc -m submission_Tracking.m
-			
-	2. Modify the line 30 of the file ``run_submission_Tracking.sh`` to add the path of the executable file like this:
-	
+    1. Again, if you don't have the compiled file yet, compile the function ``submission_Tracking.m``
+    
+        .. code-block:: matlab
+            
+            mcc -m submission_Tracking.m
+            
+    2. Modify the line 30 of the file ``run_submission_Tracking.sh`` to add the path of the executable file like this:
+    
         .. code-block:: bash
 
               eval "/MyPath/submission_Tracking" $args
@@ -50,42 +50,42 @@ It is better to compile ``track3d_psmn.m`` function.
             sh run_submission_Tracking.sh "MyExperiment" "NbFramePerJobMatching" "FirstFrame" "LastFrame" "maxdist" "lmin" "flag_pred" "npriormax" "flag_conf" "Session_INPUT" "Session_OUTPUT"
 
 .. warning:: 
-	
-	Even if some parameters are numbers (integers or floats), you need to tipe them as string by using the quote ".
-	
-	
+    
+    Even if some parameters are numbers (integers or floats), you need to type them as string by using the quote ".
+    
+    
 To run all jobs simultaneously use ``submission_Tracking.sh`` file after completing its header:
 
-		.. code-block:: bash
-		
-			NbFramePerJobMatching=20             # Number of frame per job for parallel matching
-			maxdist=0.4                         # maximum distance between rays to consider a match
-			lmin=5                                # minimum trajectory length
-			npriormax=5                           # number of points used to predict next particle position
-			manipname="Ra1.51e10_peudense_6"
-			first=401                               # First frame of the experiment                                                                                           
-			last=36000                           # Last frame of the experiment
-			NbFramePerJobTracking=5000             # Number of frame per job for tracking. Has to be a multiple of NbFramePerJob
+        .. code-block:: bash
+        
+            NbFramePerJobMatching=20             # Number of frame per job for parallel matching
+            maxdist=0.4                         # maximum distance between rays to consider a match
+            lmin=5                                # minimum trajectory length
+            npriormax=5                           # number of points used to predict next particle position
+            manipname="Ra1.51e10_peudense_6"
+            first=401                               # First frame of the experiment                                                                                           
+            last=36000                           # Last frame of the experiment
+            NbFramePerJobTracking=5000             # Number of frame per job for tracking. Has to be a multiple of NbFramePerJob
 
-			flag_pred=1                           # To do predictive tracking. If 0 do closest neighbour tracking
-			flag_conf=1                           # To resolve conflict when two particles belong to the same tracjectory. Only the closest is kept
+            flag_pred=1                           # To do predictive tracking. If 0 do closest neighbour tracking
+            flag_conf=1                           # To resolve conflict when two particles belong to the same trajectory. Only the closest is kept
 
-			Session_INPUT="/Xnfs/convection/Stage_EB_2020/"		#The path of the PROCESSED_DATA directory, where tge file rays_out_ccp.hdf5 are 
-			Session_OUTPUT="/Xnfs/convection/Stage_EB_2020/"		#The path of the PROCESSED_DATA directory, where the track_x_x.hdf5 will be  
+            Session_INPUT="/Xnfs/convection/Stage_EB_2020/"     #The path of the PROCESSED_DATA directory, where the files rays_out_ccp.hdf5 are 
+            Session_OUTPUT="/Xnfs/convection/Stage_EB_2020/"        #The path of the PROCESSED_DATA directory, where the track_x_x.hdf5 will be  
 
-			CompileFileDir="/home/eberna07/Stage_EB_2020/4d-ptv/Tracking3D"		# Directory where the compile file "run_submission_matlab.sh" is 
-			LOG_path="/Xnfs/convection/Stage_EB_2020/Processed_DATA/Ra1.51e10_peudense_6/Parallel/Tracking/LOG" 	#log directory 
-			OUT_path="/Xnfs/convection/Stage_EB_2020/Processed_DATA/Ra1.51e10_peudense_6/Parallel/Tracking/OUT"		#matlab output 
+            CompileFileDir="/home/eberna07/Stage_EB_2020/4d-ptv/Tracking3D"     # Directory where the compiled file "run_submission_matlab.sh" is 
+            LOG_path="/Xnfs/convection/Stage_EB_2020/Processed_DATA/Ra1.51e10_peudense_6/Parallel/Tracking/LOG"     #log directory 
+            OUT_path="/Xnfs/convection/Stage_EB_2020/Processed_DATA/Ra1.51e10_peudense_6/Parallel/Tracking/OUT"     #matlab output 
 
 
 
-	Several parameters are very important:
+    Several parameters are very important:
 
-			- **minframe** and **maxframe** the first and last are number of the first and last frames of the experiment,
-			- **NbFramePerJobMatching** is the number of frame per job for parallel matching,
-			- **NbFramePerJobTracking** is the number of frame per job for parallel tracking: it has to be a multiple of **NbFramePerJobMatching** because it will open several matching output files until achieves **NbFramePerJobTracking**. This number has to be selected as a function of computational time. Typically it is equal to several thousands.
+            - **minframe** and **maxframe** the first and last are number of the first and last frames of the experiment,
+            - **NbFramePerJobMatching** is the number of frame per job for parallel matching,
+            - **NbFramePerJobTracking** is the number of frame per job for parallel tracking: it has to be a multiple of **NbFramePerJobMatching** because it will open several matching output files until achieves **NbFramePerJobTracking**. This number has to be selected as a function of computational time. Typically it is equal to several thousands.
 
-	Once the submission files completed, you can launch it by opening a terminal in the the tracking directory and tipeing the command     
+    Once the submission files completed, you can launch it by opening a terminal in the the tracking directory and enter the command     
     
         .. code-block::
         

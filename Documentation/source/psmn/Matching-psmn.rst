@@ -24,7 +24,8 @@ It is mot efficient (possible) for many jobs to access to a single file. But eac
     
     .. code-block:: matlab
     
-        session.path = "MyPath";
+        session.input_path = "My4DPTVInstallationPath/Documentation/TestData/";  % My4DPTVInstallationPath has to be adapted !!!
+        session.output_path = "My4DPTVInstallationPath/Documentation/TestData/";
         RaysSavingForParallelMatching(session,"MyExperiment",[1,2,3],10)
         
     It will split *rays.dat* file into small files composed of 10 frames.
@@ -38,6 +39,7 @@ It is mot efficient (possible) for many jobs to access to a single file. But eac
 Following this method, we generate several hundreds of jobs: it it definetely not possible to run it manually. We create a ``.sh`` file which will run all jobs when it is executed. This file is created by the function ``ParallelJobsMatching.m`` which requires 11 arguments:
 
 - **session**                : Paths to the achitecture root
+- **STM_path**               : Path to the STM script
 - **ManipName**              : Name of the folder experiment
 - **nframes**                : Total number of frames in the experiment
 - **NbFramePerJobMatching**  : Number of frames per job. Pay attention, has to be chosen as a function of processing time of one picture, in order to that each job runs for 10 min (PSMN requirements).
@@ -49,7 +51,7 @@ Following this method, we generate several hundreds of jobs: it it definetely no
 - **bminy,bmaxy**            : y limits of bounding box
 - **bminz,bmaxz**            : z limits of bounding box
 - **MinDistMatchperRay**     : Specify a volume in which you cannot have an other match if you have already found one (avoid to consider several matches for one particule)
-- **Queue**                  : Running queue. By defaut it is equal to 'PIV'. It is possible to run jobs on `monointeldeb128` or `monointeldeb48` for example. Do ``qstat -g c`` to get all opened queues.
+- **Queue**                  : Running queue. By defaut it is equal to 'PIV'. It is possible to run jobs on `monointeldeb128` or `monointeldeb48` for example. Do ``qstat -g c`` to get all opened queues. It it possible to set several queues as "MyFirstQueue,MySecondQueue".
 
 The function ``ParallelJobsMatching.m`` creates a `Parallel` folder with two subfolders `SH` and `LOG` which will contains all `sh` and `log` files for each job. The `log` file is made of all jobs output and allows you to understand what happens in case of errors. The `sh` file contains all information to run the job properly on a specific queue. This file is very specific to the PSMN.
 
