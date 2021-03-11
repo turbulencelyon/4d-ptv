@@ -10,12 +10,13 @@ function RaysSavingForParallelMatching(session,ManipName,camID,nbFramePerJobMatc
 %%%     chosen as a function of processing time of one picture, in order to
 %%%     that each job runs for 10 min (PSMN requirements).
 %------------------------------------------------------------------------------
+% 2020-2021 D. Dumont
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %% Definition of folders
-folderin = sprintf("%s/Processed_DATA/%s",session.input_path,ManipName);
-folderout = sprintf('%s/Processed_DATA/%s/Parallel/Matching/Rays',session.output_path,ManipName);
+folderin = fullfile(session.input_path,"Processed_DATA",ManipName);
+folderout = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Matching','Rays');
 
 %% Creation of folder containing rays data for parallele matching
 if ~isfolder(folderout)
@@ -24,7 +25,7 @@ end
 
 % Rays data loading
 fprintf("Rays loading...")
-load(sprintf('%s/rays.mat',folderin),'datacam')
+load(fullfile(folderin,'rays.mat'),'datacam')
 
 Size = size(datacam(1).data);
 nframes= Size(2);
@@ -36,7 +37,7 @@ for kframe=1:nframes
         if kframe~=1
             fclose(fid);
         end
-        fileRays = sprintf("%s/rays_%d-%d.dat",folderout,kframe,kframe+nbFramePerJobMatching-1);
+        fileRays = fullfile(folderout,['rays_' num2str(kframe) '-' num2str(kframe+nbFramePerJobMatching-1) '.dat']);
         fprintf("%s\n",fileRays);
         fid=fopen(fileRays,'w');
     end

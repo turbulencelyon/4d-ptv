@@ -22,9 +22,9 @@ function StitchedTraj = Stitching_psmnB(session,ManipName,minframe,maxframe,NbFr
 % ------------------------------------------------------------------------------------------
 tic
 %% Input and output folders and filepath
-folderin = sprintf('%sProcessed_DATA/%s/Parallel/Stitching/StitchA/',session.path,ManipName)
-folderout = sprintf('%sProcessed_DATA/%s/Parallel/Stitching/',session.path,ManipName)
-filepath = sprintf('%sStitchedTracksB_%d-%d_dfmax%d',folderout,minframe,maxframe,dfmax)
+folderin = fullfile(session.input_path,'Processed_DATA', ManipName,'Parallel','Stitching','StitchA')
+folderout = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Stitching')
+filepath = fullfile(folderout,['StitchedTracksB_' num2str(minframe) '-' num2str(maxframe) '_dfmax' num2str(dfmax)])
 
 
 %% Creation of output folder if it does not exist
@@ -35,9 +35,9 @@ end
 %% Data loading
 for i=minframe:NbFramePerJobTracking:maxframe
     if i==minframe
-        traj = h52stitch(sprintf('%sStitchedTracksA_%d-%d_dfmax60',folderin,i,i+NbFramePerJobTracking-1))
+        traj = h52stitch(fullfile(folderin,['StitchedTracksA_' num2str(i) '-' num2str(i+NbFramePerJobTracking-1) '_dfmax' num2str(dfmax)]));
     else
-        Traj = h52stitch(sprintf('%sStitchedTracksA_%d-%d_dfmax60',folderin,i,i+NbFramePerJobTracking-1));
+        Traj = h52stitch(fullfile(folderin,['StitchedTracksA_' num2str(i) '-' num2str(i+NbFramePerJobTracking-1) '_dfmax' num2str(dfmax)]))
         traj_index = num2cell((numel(traj)+1):(numel(traj)+numel(Traj)));
         [Traj.ntraj] = traj_index{:};
         traj(end+1:end+numel(Traj)) = Traj;

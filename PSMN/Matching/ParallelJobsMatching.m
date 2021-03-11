@@ -5,6 +5,7 @@ function ParallelJobsMatching(session,STM_path,ManipName,nframes,NbFramePerJobMa
 %----------------------------------------------------------------------------
 %%% Parameters : 
 %%%     session                : Path to the achitecture root
+%%%     STM_path               : Path to the STM script
 %%%     ManipName              : Name of the folder experiment
 %%%     nframes                : Total number of frames in the experiment
 %%%     NbFramePerJob          : Number of frames per job
@@ -30,6 +31,7 @@ function ParallelJobsMatching(session,STM_path,ManipName,nframes,NbFramePerJobMa
 %%%     It is possible to run jobs on monointeldeb128 or monointeldeb48 for
 %%%     example. Do 'qstat -g c' to get all opened queues.
 %------------------------------------------------------------------------------
+% 2020-2021 D. Dumont
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Test if Queue is defined or not
@@ -38,12 +40,12 @@ if ~exist('Queue','var')
 end
 
 %% Definition of folders
-folderin = sprintf("%sProcessed_DATA/%s",session.input_path,ManipName);
-folderout = sprintf("%sProcessed_DATA/%s",session.output_path,ManipName);
-folderout_LOG = sprintf('%sProcessed_DATA/%s/Parallel/Matching/LOG',session.output_path,ManipName);
-folderout_SH = sprintf('%sProcessed_DATA/%s/Parallel/Matching/SH',session.output_path,ManipName);
-folderSTM = sprintf(STM_path);
-RaysFolder = sprintf("%s/Parallel/Matching/Rays",folderin);
+folderin = fullfile(session.input_path,"Processed_DATA",ManipName);
+folderout = fullfile(session.output_path,"Processed_DATA",ManipName);
+folderout_LOG = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Matching','LOG');
+folderout_SH = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Matching','SH');
+folderSTM = fullfile(STM_path);
+RaysFolder = fullfile(folderin,"Parallel","Matching","Rays");
 
 % Creation of folder containing .log files for parallel matching
 if ~isfolder(folderout_LOG)
@@ -55,9 +57,33 @@ if ~isfolder(folderout_SH)
     mkdir(folderout_SH);
 end
 
+% Creation of folder containing .log files for parallel tracking
+folderout_tracking_LOG = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Tracking','LOG');
+folderout_tracking_SH = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Tracking','SH');
+if ~isfolder(folderout_tracking_LOG)
+    mkdir(folderout_tracking_LOG);
+end
+
+% Creation of folder containing .sh files for parallel tracking
+if ~isfolder(folderout_tracking_SH)
+    mkdir(folderout_tracking_SH);
+end
+
+% Creation of folder containing .log files for parallel stitching
+folderout_stitching_LOG = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Stitching','LOG');
+folderout_stitching_SH = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Stitching','SH');
+if ~isfolder(folderout_stitching_LOG)
+    mkdir(folderout_stitching_LOG);
+end
+
+% Creation of folder containing .sh files for parallel stitching
+if ~isfolder(folderout_stitching_SH)
+    mkdir(folderout_stitching_SH);
+end
+
 for kframe=1:nframes
     if rem(kframe-1,NbFramePerJobMatching)==0
-        fid = fopen(sprintf("%s/rays_%d-%d.sh",folderout_SH,kframe,kframe+NbFramePerJobMatching-1),'w');
+        fid = fopen(fullfile(folderout_SH,['rays_' num2str(kframe) '-' num2str(kframe+NbFramePerJobMatching-1) '.sh']),'w');
         fwrite(fid,sprintf("#!/bin/bash\n"));
         
         %%% SGE variables
@@ -71,14 +97,14 @@ for kframe=1:nframes
 
         %%% Waiting queue
 %         fwrite(fid,sprintf("#$ -q piv_debian* ## !(*test*|*gpu*)\n"));
-        if Queue=='PIV'
+        if strcmp(Queue,'PIV')
             fwrite(fid,sprintf("#$ -q piv_debian*\n"));
             fwrite(fid,sprintf("#$ -P PIV\n"));
         else
             fwrite(fid,sprintf("#$ -q %s\n",Queue));
         end
         
-        % Load user's environement for SGE
+        % Load user's environment for SGE
         fwrite(fid,sprintf("#$ -cwd\n"));
         % Exportation of environement variables over all execution nodes
         fwrite(fid,sprintf("#$ -V\n"));
@@ -97,7 +123,7 @@ for kframe=1:nframes
 end
 
 % Creation of file running all jobs: <ManipName>-paralleleMatching.sh
-fid1=fopen(sprintf("%s/Parallel/%s-ParallelMatching.sh",folderout,ManipName),'w');
+fid1=fopen(fullfile(folderout,'Parallel',[char(ManipName) '-ParallelMatching.sh']),'w');
 for kframe=1:nframes
     if rem(kframe-1,NbFramePerJobMatching)==0
         fwrite(fid1,sprintf("qsub %s/rays_%d-%d.sh\n",folderout_SH,kframe,kframe+NbFramePerJobMatching-1));

@@ -206,7 +206,7 @@ disp([num2str(kk) ' trajectories longer than ' num2str(lmin) ' frames (from ' nu
 fprintf('Saving to .h5 file in %s\n', folderout);
 
 %save in .h5
-FileSaveName = fullfile(folderout,['tracks_' FileName '.h5']);
+FileSaveName = fullfile(folderout,['tracks_' char(FileName) '.h5']);
 fields=fieldnames(traj);
 for k=1:length(fields) %for each field
     fieldk=fields{k};

@@ -20,16 +20,16 @@ function StitchedTraj = Stitching_psmnA(session,ManipName,minframe,maxframe,dfma
 % ------------------------------------------------------------------------------------------
 tic
 %% Input and output folders and filepath
-folderin = sprintf('%sProcessed_DATA/%s/Parallel/Tracking/Tracks/',session.input_path,ManipName);
-folderout = sprintf('%sProcessed_DATA/%s/Parallel/Stitching/StitchA/',session.output_path,ManipName);
-filepath = sprintf('%sStitchedTracksA_%d-%d_dfmax%d',folderout,minframe,maxframe,dfmax);
+folderin = fullfile(session.input_path,'Processed_DATA', ManipName, 'Parallel','Tracking','Tracks');
+folderout = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Stitching','StitchA');
+filepath = fullfile(folderout,['StitchedTracksA_' num2str(minframe) '-' num2str(maxframe) '_dfmax' num2str(dfmax)]);
 
 %% Creation of output folder if it does not exist
 if ~isfolder(folderout)
     mkdir(folderout)
 end  
 
-traj = h52tracks(sprintf('%stracks_%d-%d',folderin,minframe,maxframe));
+traj = h52tracks(fullfile(folderin,['tracks_' num2str(minframe) '-' num2str(maxframe)]));
 
 %% Let's stitch trajectories everywhere
 StitchedTraj = stitchTracks(traj,dfmax,filepath,dxmax,dvmax,lmin);

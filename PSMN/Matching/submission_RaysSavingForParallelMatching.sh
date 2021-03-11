@@ -1,14 +1,14 @@
 #! /bin/bash                                                                                                                                                                                                                                               
 
 ####### Parameters to tune ########
-ManipName="Ra1.51e10_peudense_6"		
+ManipName="Ra3.3e10_peudense_1"		
 NbFramePerJobMatching=20
-Session_INPUT="/Xnfs/convection/Stage_EB_2020/"		#The path of the PROCESSED_DATA directory, where tge file rays.mat is 
-Session_OUTPUT="/Xnfs/convection/Stage_EB_2020/"		#The path of the PROCESSED_DATA directory, where the rays.dat will be saved 
+Session_INPUT="/Xnfs/convection/Lagrangien_David_Dumont/"		#The path of the PROCESSED_DATA directory, where the file rays.mat is 
+Session_OUTPUT="/Xnfs/convection/Lagrangien_David_Dumont/"		#The path of the PROCESSED_DATA directory, where the rays.dat will be saved 
 
-CompileFileDir="/home/eberna07/Stage_EB_2020/4d-ptv/Matching" 	#The directory where the file "submission_Centers2Rays.sh" is 
-LOG_path="/Xnfs/convection/Stage_EB_2020/Processed_DATA/Ra1.51e10_peudense_6/Centers2Rays_LOG"	#Log directory
-OUT_path="/Xnfs/convection/Stage_EB_2020/Processed_DATA/Ra1.51e10_peudense_6/Centers2Rays_OUT"	#Matlab output directory 
+CompileFileDir="/Xnfs/convection/Lagrangien_David_Dumont/Toolbox/4d-ptv/Matching" 	#The directory where the file "submission_Centers2Rays.sh" is 
+LOG_path="/Xnfs/convection/Lagrangien_David_Dumont/Processed_DATA/Ra3.3e10_peudense_1/LOG"	#Log directory
+OUT_path="/Xnfs/convection/Lagrangien_David_Dumont/Processed_DATA/Ra3.3e10_peudense_1/OUT"	#Matlab output directory 
 ##########################
 
 
