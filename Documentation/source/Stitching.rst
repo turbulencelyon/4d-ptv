@@ -19,13 +19,14 @@ How does it work?
     
     Scheme of stitching processing. Two trajectories are represented in red and blue, and the color shows time evolution. Particle was lost for several frames (in violet) and this step reconnect the two trajectories.
     
-The function ``Stitching.m`` is useful for that and takes 6 arguments:
+The function ``Stitching.m`` is useful for that and takes 7 arguments:
 
 - **session**     : Path to the architecture root
 - **ManipName**   : Name of the experiment
 - **FileName**    : Name of the tracks file
-- **dfmax**       : maximum tolerated distance (in norm) between projected point after the first trajectory and the real beginning position of the stitched one,
-- **dvmax**       : maximum tolerated relative velocity difference between the end of the first trajectory and the beginning of the stitched one,
+- **dfmax**       : maximum number of tolerated missing frames to reconnect to trajectories,
+- **dxmax**       : maximum tolerated distance (in norm) between projected point after the first trajectory and the real beginning position of the stitched one,
+- **dvmax**       : maximum tolerated relative velocity difference (component by component) between the end of the first trajectory and the beginning of the stitched one,
 - **lmin**        : minimum length for a trajectory to be stitched.
 
 The function ``Stitching.m`` will create a file **stitched_FileName_dfmax.h5** in the folder **ManipName**.
