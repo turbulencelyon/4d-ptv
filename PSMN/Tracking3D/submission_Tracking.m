@@ -4,12 +4,12 @@ function submission_Tracking(ManipName,NbFramePerJobMatching,minframe,maxframe,m
 %  How to use:
 % Compile the file with the following command: 
 % mcc -m submission_Tracking.m
-% You will obtain several file, 2 are useful: run_submission_matlab.sh and
-% submision_matlab.exe
-% IMPORTANT: in run_submission_matlab.sh, replace the line 30 by
+% You will obtain several file, 2 are useful: run_submission_Tracking.sh and
+% submission_Tracking.exe
+% IMPORTANT: in run_submission_Tracking.sh, replace the line 30 by
 %  eval "/My4D-PTVPath/PSMN/Tracking3D/submission_Tracking" $args
 % Once you did this you can modified and then call the file
-% submision_%tracking.sh in a terminal to launch the parallelisation
+% submission_Tracking.sh in a terminal to launch the parallelisation
 % --------------------------------------------------------------------------
 % 2020 E. Bernard
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

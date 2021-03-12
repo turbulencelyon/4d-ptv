@@ -197,7 +197,7 @@ fprintf('\n%d tracks were stitched\n',Nstitch)
 if exist('lminSupr','var')
    StitchedTraj([StitchedTraj.L]<lminSupr)=[]; 
 end
-OutputFileName = fullfile([filepath '.h5']);
+OutputFileName = fullfile([filepath '.h5'])
 fprintf("StitchedtracksSides saved as %s\n", OutputFileName)
 fields=fieldnames(StitchedTraj);
 for k=1:length(fields) %for each field
