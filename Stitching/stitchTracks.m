@@ -93,7 +93,7 @@ if ~isfield(StitchedTraj,'nbstitch')
 end
 
 %% Loop over ff (frame number at the end of each trajectory
-fprintf("Let's start loop over trajectories\n")
+fprintf("Let's start loop over the %d trajectories\n", numel(ff))
 kff = 1;
 while (kff <= numel(ff))
     if rem(kff,1000)==0
@@ -112,7 +112,7 @@ while (kff <= numel(ff))
         dX = sqrt((xi(ii)-xf(kff)-df*vxf(kff)).^2+(yi(ii)-yf(kff)-df*vyf(kff)).^2+(zi(ii)-zf(kff)-df*vzf(kff)).^2);           % Position norm difference dX = sqrt(Xi-Xf-df*vf)
         
         %% Is there any trajectory close spatially with a similar velocity?
-        Imatch=find((dX<dxmax) & (dVx<dvmax) & (dVy<dvmax) & (dVz<dvmax));
+        Imatch=find((dX<dxmax) & (abs(dVx)<dvmax) & (abs(dVy)<dvmax) & (abs(dVz)<dvmax));
         % Yes
         if ~isempty(Imatch)
             if numel(Imatch)>1 % If there are several possible match we take the closest one.
@@ -197,7 +197,7 @@ fprintf('\n%d tracks were stitched\n',Nstitch)
 if exist('lminSupr','var')
    StitchedTraj([StitchedTraj.L]<lminSupr)=[]; 
 end
-OutputFileName = fullfile([filepath '.h5'])
+OutputFileName = fullfile([char(filepath) '.h5']);
 fprintf("StitchedtracksSides saved as %s\n", OutputFileName)
 fields=fieldnames(StitchedTraj);
 for k=1:length(fields) %for each field
