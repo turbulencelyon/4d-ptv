@@ -34,16 +34,32 @@ if ~isfolder(folderout)
 end  
 
 %% Data loading
+if rem(maxframe-minframe+1,NbFramePerJobTracking)==0
+    EndFrame = maxframe;
+else
+    EndFrame = maxframe-NbFramePerJobTracking+1;
+end
 fprintf("Data loading in progress")
-for i=minframe:NbFramePerJobTracking:maxframe
+for i=minframe:NbFramePerJobTracking:EndFrame
+    FileName = fullfile(folderin,['StitchedTracksA_' num2str(i) '-' num2str(i+NbFramePerJobTracking-1) '_dfmax' num2str(dfmax)])
     if i==minframe
-        traj = h52stitch(fullfile(folderin,['StitchedTracksA_' num2str(i) '-' num2str(i+NbFramePerJobTracking-1) '_dfmax' num2str(dfmax)]));
+        traj = h52stitch(FileName);
+        traj_index = num2cell(1:numel(traj));
+        [traj.ntraj] = traj_index{:};
     else
-        Traj = h52stitch(fullfile(folderin,['StitchedTracksA_' num2str(i) '-' num2str(i+NbFramePerJobTracking-1) '_dfmax' num2str(dfmax)]))
+        Traj = h52stitch(FileName);
         traj_index = num2cell((numel(traj)+1):(numel(traj)+numel(Traj)));
         [Traj.ntraj] = traj_index{:};
         traj(end+1:end+numel(Traj)) = Traj;
     end
+end
+if rem(maxframe-minframe+1,NbFramePerJobTracking)~=0
+    i=i+NbFramePerJobTracking;
+    FileName = fullfile(folderin,['StitchedTracksA_' num2str(i) '-' num2str(maxframe) '_dfmax' num2str(dfmax)]);
+    Traj = h52stitch(FileName);
+    traj_index = num2cell((numel(traj)+1):(numel(traj)+numel(Traj)));
+    [Traj.ntraj] = traj_index{:};
+    traj(end+1:end+numel(Traj)) = Traj;
 end
 
 %% Let's stitch trajectories only at the files limits without saving output (filepath not given to stitchTracksSides)
