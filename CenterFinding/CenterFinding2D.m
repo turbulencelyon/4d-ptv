@@ -150,7 +150,9 @@ else
     %% Tracé de l'histogramme des intensités pour définir le seuil
     figure('NumberTitle','Off','Name','Intensity histogram');
     histogram(Im,1000)
-    xline(th,'r')
+    for i=1:numel(th)
+        xline(th(i),'r')
+    end
     xlabel("Intensity")
     ylabel("Number")
     set(gca, 'XScale', 'log')
@@ -158,38 +160,51 @@ else
     
     Nx = size(Im,2);
     Ny = size(Im,1);
+    
+    for i=1:numel(th)
+        out=pkfnd(Im,th(i),sz); % Provides intensity maxima positions
+        npar = size(out,1);
 
-    out=pkfnd(Im,th,sz); % Provides intensity maxima positions
-    npar = size(out,1);
-        
-    %% We keep only spots with a gaussian shape
-    cnt = 0;
-    x = [];
-    y = [];
-    for j = 1:npar
-        Nwidth = 1;
-        if (out(j,2)-Nwidth >0)&&(out(j,1)-Nwidth>0)&&(out(j,2)+Nwidth<Ny)&&(out(j,1)+Nwidth<Nx)
-            cnt = cnt+1;
+        %% We keep only spots with a gaussian shape
+        cnt = 0;
+        x = [];
+        y = [];
+        for j = 1:npar
+            Nwidth = 1;
+            if (out(j,2)-Nwidth >0)&&(out(j,1)-Nwidth>0)&&(out(j,2)+Nwidth<Ny)&&(out(j,1)+Nwidth<Nx)
+                cnt = cnt+1;
 
-            Ip = double(Im(out(j,2)-Nwidth:out(j,2)+Nwidth,out(j,1)-Nwidth:out(j,1)+Nwidth));
+                Ip = double(Im(out(j,2)-Nwidth:out(j,2)+Nwidth,out(j,1)-Nwidth:out(j,1)+Nwidth));
 
-            x(end+1) = out(j, 1) + 0.5*log(Ip(2,3)/Ip(2,1))/(log((Ip(2,2)*Ip(2,2))/(Ip(2,1)*Ip(2,3))));
-            y(end+1) = out(j, 2) + 0.5*log(Ip(3,2)/Ip(1,2))/(log((Ip(2,2)*Ip(2,2))/(Ip(1,2)*Ip(3,2))));
+                x(end+1) = out(j, 1) + 0.5*log(Ip(2,3)/Ip(2,1))/(log((Ip(2,2)*Ip(2,2))/(Ip(2,1)*Ip(2,3))));
+                y(end+1) = out(j, 2) + 0.5*log(Ip(3,2)/Ip(1,2))/(log((Ip(2,2)*Ip(2,2))/(Ip(1,2)*Ip(3,2))));
+            end
+        end
+        if i==1
+            x1=x;
+            y1=y;
         end
     end
-    CC(kframe).X=x;
-    CC(kframe).Y=y;
+%     CC(kframe).X=x;
+%     CC(kframe).Y=y;
 
     fprintf("%d treated \n",kframe)
 
     %% Let's plot picture and detected points on a graph !!! Be careful the vertical axis is reversed compared to reality !!!
-    figure('NumberTitle','Off','Name',sprintf("frame %d, %d detected points",kframe,numel(x)))
+    if numel(th)>1
+        figure('NumberTitle','Off','Name',sprintf("frame %d, %d-%d detected points",kframe,numel(x1),numel(x)))
+    else
+        figure('NumberTitle','Off','Name',sprintf("frame %d, %d detected points",kframe,numel(x)))
+    end
     hax2 = axes;
     imshow(Im)
     colormap gray
     
     hold on
+    plot(hax1,flip(x1),flip(y1),'g+')
     plot(hax1,flip(x),flip(y),'r+')
+    hold on
+    plot(hax2,flip(x1),flip(y1),'g+')
     plot(hax2,flip(x),flip(y),'r+')
 end
 

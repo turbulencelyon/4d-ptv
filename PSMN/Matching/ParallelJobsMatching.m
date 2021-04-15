@@ -115,7 +115,7 @@ for kframe=1:nframes
 
         % Job execution
          fwrite(fid,sprintf("%sSTM -i %s/rays_%d-%d.dat -o %s/Parallel/Matching/Rays/ -f %d -c %d -d %f -m %d -x %d -y %d -z %d -b %d %d %d %d %d %d -s %d --hdf5> %s/rays_%d-%d.log\n",...
-             folderSTM,RaysFolder,kframe, kframe+NbFramePerJobMatching-1,folderout, nframes,CamMatch, MaxDistance,MaxMatchesPerRay, nx,ny,nz,bminx,bmaxx,bminy,bmaxy,bminz,bmaxz, MinDistMatchperRay, folderout_LOG,kframe,kframe+NbFramePerJobMatching-1));
+             folderSTM,RaysFolder,kframe, kframe+NbFramePerJobMatching-1,folderout, NbFramePerJobMatching, CamMatch, MaxDistance,MaxMatchesPerRay, nx,ny,nz,bminx,bmaxx,bminy,bmaxy,bminz,bmaxz, MinDistMatchperRay, folderout_LOG,kframe,kframe+NbFramePerJobMatching-1));
 
         fclose(fid);
 

@@ -49,7 +49,7 @@ for i=1:Size
 end
 
 %% Reasearch of all trajectories ending between frames nframe-dfmax-1 and nframe-1 and trajectories starting between frames nframe and nframe+dfmax
-for nframe=(minframe+NbFramePerJobTracking):NbFramePerJobTracking:(maxframe-NbFramePerJobTracking+1)
+for nframe=ListFileFrame[2:end-1] %(minframe+NbFramePerJobTracking):NbFramePerJobTracking:(maxframe-NbFramePerJobTracking+1)
     if nframe==minframe+NbFramePerJobTracking
         FI = and(fi>=nframe,fi<=nframe+dfmax);
         FF = and(ff>=nframe-dfmax-1,ff<nframe);
@@ -144,7 +144,7 @@ while (kff <= numel(ff))
             dX = sqrt((xi(ii)-xf(kff)-df*vxf(kff)).^2+(yi(ii)-yf(kff)-df*vyf(kff)).^2+(zi(ii)-zf(kff)-df*vzf(kff)).^2);           % Position norm difference dX = sqrt(Xi-Xf-df*vf)
 
             %% Is there any trajectory close spatially with a similar velocity?
-            Imatch=find((dX<dxmax) & (dVx<dvmax) & (dVy<dvmax) & (dVz<dvmax));
+            Imatch=find((dX<dxmax) & (abs(dVx)<dvmax) & (abs(dVy)<dvmax) & (abs(dVz)<dvmax));
             % Yes
             if ~isempty(Imatch)
                 if numel(Imatch)>1 % If there are several possible match we take the closest one.

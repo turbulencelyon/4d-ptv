@@ -39,7 +39,8 @@ fileRays=fullfile(folderout,'rays.dat');
 
 fid=fopen(fileRays,'w');
 
-fprintf("Let's start loop over cameras...")
+fprintf("Let's start loop over cameras...\n")
+tic()
 % Loop over cameras
 for kcam=1:numel(camID)
     % select calibration for camera camID(kcam)
@@ -72,10 +73,11 @@ for kcam=1:numel(camID)
     end
     datacam(kcam).data=data;
 end
+toc()
 
 % Writing data in matlab file
-fprintf("Writing data in matlab file in progress...")
-save(fullfile(folderout,'rays.mat'),'datacam','-v7.3')
+fprintf("Writing data in matlab file in progress...\n")
+save(fullfile(folderout,'rays.mat'),'datacam','Calib','-v7.3')
 
 %%
 % write results in file

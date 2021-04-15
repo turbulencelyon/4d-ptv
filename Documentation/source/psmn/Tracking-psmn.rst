@@ -53,6 +53,8 @@ It is better to compile ``track3d_psmn.m`` function.
     
     Even if some parameters are numbers (integers or floats), you need to type them as string by using the quote ".
     
+    If you modify any sub-function called by ```submission_Tracking.m```, you have to compile ```submission_Tracking.m``` again to take into account your adds.
+    
     
 To run all jobs simultaneously use ``submission_Tracking.sh`` file after completing its header:
 
