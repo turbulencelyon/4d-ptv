@@ -77,20 +77,16 @@ dXstitch=h5read(filename,'/dXstitch');
 dVstitch=h5read(filename,'/dVstitch');
 
 c=1;
-% d=1;
+d=1;
 for kt=1:length(L)
     jstitch=nbstitch(kt);
-    if jstitch==0
-        %stitchtraj(kt).dfstitch = [];
-        %stitchtraj(kt).dXstitch = [];
-        %stitchtraj(kt).dVstitch = [];
-    else
+    if jstitch~=0
         stitchtraj(kt).dfstitch = dfstitch(c:c+jstitch-1);
         stitchtraj(kt).dXstitch = dXstitch(c:c+jstitch-1);
-%         stitchtraj(kt).dVstitch = dVstitch(d:d+3*jstitch-1);
-        stitchtraj(kt).dVstitch = dVstitch(c:c+jstitch-1);
+        stitchtraj(kt).dVstitch = dVstitch(d:d+3*jstitch-1);
+%         stitchtraj(kt).dVstitch = dVstitch(c:c+jstitch-1);
         c=c+jstitch;
-%         d=d+3*jstitch;
+        d=d+3*jstitch;
     end
 end
 

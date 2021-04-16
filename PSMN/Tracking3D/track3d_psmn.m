@@ -29,7 +29,7 @@ function [tracks,traj]=track3d_psmn(session,ManipName,NbFramePerJobMatching,minf
 % --------------------------------------------------------------------------
 % 2020-2021 D. Dumont
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+fprintf("track3d_psmn is starting...\n")
 % Check if (maxframe-minframe+1) is a multiple of NbFramePerJob
 if rem((maxframe-minframe+1),NbFramePerJobMatching)~=0
 fprintf("(maxframe-minframe+1) has to be a multiple of NbFramePerJobTracking! Please correct it.")
@@ -52,7 +52,7 @@ tic
 %load matches We load all matched files which contains matched point
 %between min and maxframe
 for i=minframe:NbFramePerJobMatching:maxframe
-    fprintf(" frame %d",i)
+    fprintf(" frame %d ",i)
     filematches=fullfile(folderin,['rays_' num2str(i) '-' num2str(i+NbFramePerJobMatching-1) '_out_cpp.h5']);
     fprintf('Input file: %s\n',filematches)
 

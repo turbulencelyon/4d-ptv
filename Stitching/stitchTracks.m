@@ -1,6 +1,6 @@
-
 function StitchedTraj = stitchTracks(traj,dfmax,filepath,dxmax,dvmax,lmin)
-% 2020 - David Dumont -> loop for df=1:dfmax
+% 2020-2021 - David Dumont -> loop for df=1:dfmax + criteria on the
+% velocity + stitching data saving
 % 2017 - Mickaël Bourgoin
 %
 % Reconnect trajectories when their particles have been missed for <dfmax>
@@ -63,7 +63,7 @@ for i=1:Size
    index_vf(i,:) = index_f(i)-floor(lmin/2):index_f(i);
 end
 
-vxi = mean(diff(x(index_vi),1,2),2);              % x velocity at the beginning of each trajectory (computed using lmin/2 first points)
+vxi = mean(diff(x(index_vi),1,2),2);              % x velocity at the beginning of each trajectory (computed using floor(lmin/2) first points)
 vxf = mean(diff(x(index_vf),1,2),2);
 vyi = mean(diff(y(index_vi),1,2),2);
 vyf = mean(diff(y(index_vf),1,2),2);
@@ -198,7 +198,7 @@ if exist('lminSupr','var')
    StitchedTraj([StitchedTraj.L]<lminSupr)=[]; 
 end
 OutputFileName = fullfile([char(filepath) '.h5']);
-fprintf("StitchedtracksSides saved as %s\n", OutputFileName)
+fprintf("StitchedTraj saved as %s\n", OutputFileName)
 fields=fieldnames(StitchedTraj);
 for k=1:length(fields) %for each field
     fieldk=fields{k};
@@ -217,6 +217,6 @@ for param=["dfmax","dxmax","dvmax","lmin"]
 end
 
 elapsed = toc;
-fprintf("elapsed time = %d s",elapsed)
+fprintf("Stitching done in %d s",elapsed)
 
 end

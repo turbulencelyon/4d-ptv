@@ -1,4 +1,4 @@
-function StitchedTraj = Stitching_psmnA(session,ManipName,minframe,maxframe,dfmax,dxmax,dvmax,lmin)
+function StitchedTraj = Stitching_psmnA(session,ManipName,minframe,maxframe,dfmax,dxmax,dvmax,lmin,Test)
 % Create automatic filepath, load data and call for stitchTracks function.
 % To use after track3d_psmn.m function, only for the first run.
 % Reconnect trajectories in the whole data.
@@ -19,20 +19,27 @@ function StitchedTraj = Stitching_psmnA(session,ManipName,minframe,maxframe,dfma
 % ----------------------------------------------------------------------------------------
 % 04/2020 - David Dumont
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-tic
+tic()
 %% Input and output folders and filepath
 folderin = fullfile(session.input_path,'Processed_DATA', ManipName, 'Parallel','Tracking','Tracks')
 folderout = fullfile(session.output_path,'Processed_DATA',ManipName,'Parallel','Stitching','StitchA')
-filepath = fullfile(folderout,['StitchedTracksA_' num2str(minframe) '-' num2str(maxframe) '_dfmax' num2str(dfmax)]);
+if exist('Test','var')
+    filepath = fullfile(folderout,['StitchedTracksA_' num2str(minframe) '-' num2str(maxframe) '_dfmax' num2str(dfmax) '_' num2str(Test)]);
+else
+    filepath = fullfile(folderout,['StitchedTracksA_' num2str(minframe) '-' num2str(maxframe) '_dfmax' num2str(dfmax)]);
+end
 
 %% Creation of output folder if it does not exist
 if ~isfolder(folderout)
     mkdir(folderout)
 end  
 
+fprintf("Data loading")
+tic()
 FileName = fullfile(folderin,['tracks_' num2str(minframe) '-' num2str(maxframe)])
 traj = h52tracks(FileName);
+toc()
 
 %% Let's stitch trajectories everywhere
 StitchedTraj = stitchTracks(traj,dfmax,filepath,dxmax,dvmax,lmin);
-toc
+toc()

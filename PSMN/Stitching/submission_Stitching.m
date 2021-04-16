@@ -1,4 +1,5 @@
 function submission_Stitching(ManipName,minframe,maxframe,dfmax,dxmax,dvmax,lmin,Session_INPUT,Session_OUTPUT)
+% function submission_Stitching(ManipName,minframe,maxframe,dfmax,dxmax,dvmax,lmin,test,Session_INPUT,Session_OUTPUT)
 % Function to compile to run Stitching in parallel on the PSMN
 %----------------------------------------------------------------------------
 %  How to use:
@@ -23,5 +24,7 @@ Minframe=str2num(minframe)
 Dxmax=str2num(dxmax)
 Dvmax=str2num(dvmax)
 Lmin=str2num(lmin)
+% Test=str2num(test)
+% StitchedTraj = Stitching_psmnA(session,ManipName,Minframe,Maxframe,Dfmax,Dxmax,Dvmax,Lmin,Test)
 StitchedTraj = Stitching_psmnA(session,ManipName,Minframe,Maxframe,Dfmax,Dxmax,Dvmax,Lmin)
 end

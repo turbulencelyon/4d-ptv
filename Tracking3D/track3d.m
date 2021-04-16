@@ -1,4 +1,4 @@
-function [tracks,traj]=track3d(session,ManipName,FileName,NbFrame,maxdist,lmin,flag_pred,npriormax,flag_conf,minFrame)
+function [tracks,traj]=track3d(session,ManipName,FileName,NbFrame,maxdist,lmin,flag_pred,npriormax,flag_conf,minFrame,test)
 
 % Load matches data and give it to track3d_manualfit to track particles.
 % ____________________________________________________________________________
@@ -14,6 +14,8 @@ function [tracks,traj]=track3d(session,ManipName,FileName,NbFrame,maxdist,lmin,f
 % npriormax : maximum number of prior frames used for predictive tracking
 % flag_conf : 1 for conflict solving, 0 otherwise
 % minFrame : (optional) number of the first frame. Default = 1.
+% test      : (optional) allows you to not save data when you are doing
+% tests to find best parameters
 %
 % OUTPUTS
 % traj(kt).ntraj  : trajectory index
@@ -31,6 +33,9 @@ function [tracks,traj]=track3d(session,ManipName,FileName,NbFrame,maxdist,lmin,f
 if ~exist('minFrame','var')
     minFrame=1;
 end
+if ~exist('test','var')
+    test=false;
+end
 
 % Folder name creation
 folderin = fullfile(session.input_path, 'Processed_DATA', ManipName);
@@ -45,7 +50,7 @@ filename = fullfile(folderin,FileName);
 data = h52matches(filename,NbFrame,minFrame);
 
 %% Call for track3d_manualfit function
-[tracks,traj] = track3d_manualfit(folderout,FileName,data,maxdist,lmin,flag_pred,npriormax,flag_conf);
+[tracks,traj] = track3d_manualfit(folderout,FileName,data,maxdist,lmin,flag_pred,npriormax,flag_conf,test);
 
 % %% Call for track3d_polyfit function
 % [tracks,traj] = track3d_polyfit(folderout,FileName,data,maxdist,lmin,flag_pred,npriormax,flag_conf);

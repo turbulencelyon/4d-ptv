@@ -1,4 +1,4 @@
-function [tracks,traj]=track3d_manualfit(folderout,FileName,data,maxdist,lmin,flag_pred,npriormax,flag_conf)
+function [tracks,traj]=track3d_manualfit(folderout,FileName,data,maxdist,lmin,flag_pred,npriormax,flag_conf,test)
 
 % 03/2019 - Thomas Basset 
 % 01/2020 - "Optimisation" David Dumont
@@ -14,6 +14,8 @@ function [tracks,traj]=track3d_manualfit(folderout,FileName,data,maxdist,lmin,fl
 % flag_pred : 1 for predictive tracking, 0 otherwise
 % npriormax : maximum number of prior frames used for predictive tracking
 % flag_conf : 1 for conflict solving, 0 otherwise
+% test      : (optional) if true, data are not saved (useful when you are looking for
+% best parameters. False by defaut.
 %
 % OUTPUTS
 % traj(kt).ntraj  : trajectory index
@@ -25,6 +27,9 @@ function [tracks,traj]=track3d_manualfit(folderout,FileName,data,maxdist,lmin,fl
 % traj(kt).nmatch : element indices in tracks
 % tracks          : trajectory raw data
 % ____________________________________________________________________________
+if ~exist('test','var')
+    test=false;
+end
 
 fprintf('Beginning tracking...\n');
 
@@ -206,19 +211,20 @@ disp([num2str(kk) ' trajectories longer than ' num2str(lmin) ' frames (from ' nu
 fprintf('Saving to .h5 file in %s\n', folderout);
 
 %save in .h5
-FileSaveName = fullfile(folderout,['tracks_' char(FileName) '.h5']);
-fields=fieldnames(traj);
-for k=1:length(fields) %for each field
-    fieldk=fields{k};
-    h5create(FileSaveName,['/' fieldk],[length(vertcat(traj.(fieldk))) 1],'ChunkSize',[1000 1],'Deflate',9)
-    h5write(FileSaveName,['/' fieldk],vertcat(traj.(fieldk)))
+if ~test
+    FileSaveName = fullfile(folderout,['tracks_' char(FileName) '.h5'])
+    fields=fieldnames(traj);
+    for k=1:length(fields) %for each field
+        fieldk=fields{k};
+        h5create(FileSaveName,['/' fieldk],[length(vertcat(traj.(fieldk))) 1],'ChunkSize',[1000 1],'Deflate',9)
+        h5write(FileSaveName,['/' fieldk],vertcat(traj.(fieldk)))
+    end
+    % saving of tracking parameters
+    for param=["maxdist","lmin","flag_pred","npriormax","flag_conf"]
+        h5create(FileSaveName,['/trackingparameters/' char(param)],1)
+        h5write(FileSaveName,['/trackingparameters/' char(param)],eval(param))
+    end
 end
-% saving of tracking parameters
-for param=["maxdist","lmin","flag_pred","npriormax","flag_conf"]
-    h5create(FileSaveName,['/trackingparameters/' char(param)],1)
-    h5write(FileSaveName,['/trackingparameters/' char(param)],eval(param))
-end
-
 
 disp('Tracking complete!');
 elapsed=toc;

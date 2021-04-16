@@ -1,4 +1,4 @@
-function RaysSavingForParallelMatching(session,ManipName,camID,nbFramePerJobMatching)
+function RaysSavingForParallelMatching(session,ManipName,camID,minFrame,maxFrame,nbFramePerJobMatching)
 %%% Save data from rays.mat into multiple small .dat to run later parallele matching
 %----------------------------------------------------------------------------
 %%% Parameters : 
@@ -24,20 +24,24 @@ if ~isfolder(folderout)
 end
 
 % Rays data loading
-fprintf("Rays loading...")
+fprintf("Rays loading...\n")
 load(fullfile(folderin,'rays.mat'),'datacam')
 
-Size = size(datacam(1).data);
-nframes= Size(2);
+% Size = size(datacam(1).data);
+% nframes= Size(2);
 
 % write results in file
 fprintf("Writing data in process...\n")
-for kframe=1:nframes
-    if rem(kframe-1,nbFramePerJobMatching)==0
-        if kframe~=1
+for kframe=minFrame:maxFrame
+    if rem(kframe-minFrame,nbFramePerJobMatching)==0
+        if kframe~=minFrame
             fclose(fid);
         end
-        fileRays = fullfile(folderout,['rays_' num2str(kframe) '-' num2str(kframe+nbFramePerJobMatching-1) '.dat']);
+        if kframe+nbFramePerJobMatching-1>maxFrame
+            fileRays = fullfile(folderout,['rays_' num2str(kframe) '-' num2str(maxFrame) '.dat']);
+        else
+            fileRays = fullfile(folderout,['rays_' num2str(kframe) '-' num2str(kframe+nbFramePerJobMatching-1) '.dat']);
+        end
         fprintf("%s\n",fileRays);
         fid=fopen(fileRays,'w');
     end
