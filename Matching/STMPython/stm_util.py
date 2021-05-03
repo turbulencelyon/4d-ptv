@@ -19,6 +19,16 @@ from transonic import boost, Tuple, List, Array
 
 from util_groupby import make_groups_by_cell_cam
 
+def save_hdf5(output,frame,hdf5_parent):
+    xyze = np.vstack([np.hstack([o[1],o[2]]) for o in output]).transpose()
+    numcam = max([len(o[0]) for o in output])
+    camrayids = -np.ones([numcam*2,len(output)],dtype=int)
+    for i,o in enumerate(output):
+        for j,r in enumerate(np.hstack(o[0])):
+            camrayids[j,i] = r
+    hdf5_parent.create_dataset(f"frame{frame}_xyze",data = xyze)
+    hdf5_parent.create_dataset(f"frame{frame}_camrayids",data = camrayids)
+
 
 @boost
 def expand_all_neighbours_uniq(
