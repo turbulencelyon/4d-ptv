@@ -19,7 +19,7 @@ import traceback
 from time import perf_counter
 import argparse
 import h5py
-
+from stm_util import save_hdf5
 
 USE_UNOPTIMIZED = os.environ.get("STM_PYTHON_USE_UNOPTIMIZED", False)
 
@@ -51,7 +51,7 @@ Command to launch the C++ code::
 
 The result of the C++ code is 7466 matched found (out of 135271 candidates)
 """
-from stm_util import save_hdf5
+
 if not USE_UNOPTIMIZED:
     from stm_util import space_traversal_matching
 else:
@@ -94,20 +94,25 @@ def compute_stm(
 
     fileout = copy.copy(filename).split(".")
     fileout = ".".join(fileout[0 : len(fileout) - 1])
-    filelog = fileout + ".log"
     fileout = (
         fileout.replace("rays", "matched")
         + f"cam{cam_match}_{start_frame}-{stop_frames-1}.h5"
     )
-
+    fileforlog = copy.copy(fileout).split(".")
+    fileforlog = ".".join(fileforlog[0 : len(fileforlog) - 1])
+    filelog = fileforlog + ".log"
     fin = open(filename, "rb")
     frameid = start_frame
     numpts = fin.read(4)  # Read 4 bytes header
-    with h5py.File(fileout,"w") as file:
+    with h5py.File(fileout, "w") as file:
         while len(numpts) > 0 and frameid < stop_frames:  # If something is read
-            numpts = struct.unpack("I", numpts)[0]  # Interpret header as 4 byte uint
+            numpts = struct.unpack("I", numpts)[
+                0
+            ]  # Interpret header as 4 byte uint
             with open(filelog, "a") as flog:
-                flog.write("#######\nFrame: {frameid}\nNumber of rays: {numpts}\n")
+                flog.write(
+                    f"#######\nFrame: {frameid}\nNumber of rays: {numpts}\n"
+                )
 
             print("Frame:", frameid, ". # of rays:", numpts)
 
@@ -145,7 +150,7 @@ def compute_stm(
 
             # Prepare output
             print("Matches found:", len(output))
-            save_hdf5(output,frameid,file)
+            save_hdf5(output, frameid, file)
             numpts = fin.read(4)  # Read next header
             frameid += 1
     fin.close()
