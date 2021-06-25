@@ -1,4 +1,4 @@
-function [calib] = MakeCalibration(dirIn,zPlanes,camName,gridSpace,th,dotSize,lnoise,blackDots,extension,FirstPlane,FirstCam)
+function [calib] = MakeCalibration(dirIn,zPlanes,camName,gridSpace,th,dotSize,lnoise,blackDots,extension,FirstPlane,FirstCam,PlaneNumberList)
 % Make calibration file.
 % With human help, detect calibration grid on calibration pictures and
 % compute 1st and 3rd order transformations.
@@ -17,7 +17,8 @@ function [calib] = MakeCalibration(dirIn,zPlanes,camName,gridSpace,th,dotSize,ln
 %   extension (optional)  : pictures extension. By defaut extention = 'tif', 
 %   FirstPlane (optional) : number of the first plane to treat (useful
 %   when you did a mistake during calibration to start at the right plane),
-%   FirstCam (optional)   : number of the first camera to treat (idem).
+%   FirstCam (optional)   : number of the first camera to treat (idem),
+%   PlaneNumberList (optional) : list of the plane number you want to treat
 % 
 % OUTPUT
 %     a calib.mat file saved in dirIn which contains the structure 'calib' such as for the kz plane and the kcam camera:
@@ -59,6 +60,9 @@ end
 if ~exist('FirstCam','var')
     FirstCam=1;
 end
+if ~exist('PlaneNumberList','var')
+    PlaneNumberList = FirstPlane:numel(zPlane);
+end
 
 % Total number of cameras
 Ncam = numel(camName);
@@ -72,7 +76,7 @@ xyzRef(3).ref(1:NbzPlanes,:) = repmat([0 0 0],NbzPlanes,1); % pixels
 xyzRef(4).ref(1:NbzPlanes,:) = repmat([0 0 0],NbzPlanes,1); % pixels
 
 %% Let's treat every calibration pictures
-for kz = FirstPlane:numel(zPlanes)
+for kz = PlaneNumberList
     z = zPlanes(kz)
     for kcam = FirstCam:Ncam
         filename = sprintf('%s/CalibrationPlan_%d_cam%d.%s',dirIn, kz, kcam, extension);        
@@ -92,7 +96,7 @@ for kz = FirstPlane:numel(zPlanes)
 end
 
 %% make calib structure
-for kz = 1:numel(zPlanes)
+for kz = PlaneNumberList
     for kcam = 1:Ncam
         kz
         kcam
