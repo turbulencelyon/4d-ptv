@@ -1,4 +1,4 @@
-PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
+PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_11-20.dat"
 
 all:
 	transonic stm_util.py -af "-march=native -Ofast -DUSE_XSIMD"
