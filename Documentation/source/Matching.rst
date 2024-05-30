@@ -82,7 +82,7 @@ gives:
 
     Example:
 
-    export PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
+    export PATH_INPUT_DATA="../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_11-20.dat"
     ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2
 
     or (to specify the limits of the visualized region):
@@ -110,7 +110,7 @@ To run matching on test Data, in a terminal
 
 .. code-block:: bash
 
-    python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat" 1 10 2 0.2 400 400 250 2
+    python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_11-20.dat" 1 10 2 0.2 400 400 250 2
 
 The script creates in the rays folder a file called
 ``matched_cam{cam_match}_{minframe}-{maxframe}.dat`` which contains all matched
@@ -120,7 +120,7 @@ This kind of file can be openned with the Matlab function `readmatches.m`
 
 .. code-block:: matlab
 
-    [matches,other,params] = readmatches("My4DPTVInstallationPath/Documentation/TestData/Processed_DATA/MyExperiment/matched_cam2_1-100.dat")
+    [matches,other,params] = readmatches("My4DPTVInstallationPath/Documentation/TestData/Processed_DATA/MyExperiment/matched_cam2_11-20.dat")
 
 - **matches** which is a nmatches x 5 matrix [FrameNumber, x, y, z, Error]
 - **other** which is a nmatches x ? matrix [NumberofRaysUsedInMatch, cam0ID,ray0ID,cam1ID,rays1ID,...]
@@ -214,7 +214,7 @@ How to compile ``STM.cpp`` file ?
     .. code-block:: bash
 
         cd MyPath/4D-PTV/Matching/STMCpp/
-        ./STM -i ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_1-10.dat -o ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/ -f 10 -c 2 -d 0.2 -s 1 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
+        ./STM -i ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_11-20.dat -o ../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/ -f 10 -c 2 -d 0.2 -s 1 -m 2 -x 400 -y 400 -z 250 -b -140 140 -150 150 5 170 --hdf5
  
 .. seealso::
 
