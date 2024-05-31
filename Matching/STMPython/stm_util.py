@@ -49,11 +49,9 @@ def expand_all_neighbours_uniq(
             delta = neighbours[index_delta]
             big[index_point * nb_neighbours + index_delta, :] = point + delta
 
-    multiplicator = 2 ** 10
+    multiplicator = 2**10
     assert big.max() < multiplicator
-    as_ints = (
-        multiplicator ** 2 * big[:, 0] + multiplicator * big[:, 1] + big[:, 2]
-    )
+    as_ints = multiplicator**2 * big[:, 0] + multiplicator * big[:, 1] + big[:, 2]
 
     indices = as_ints.argsort()
     as_ints_sorted = as_ints[indices]
@@ -113,10 +111,10 @@ def find_index_bin(boundaries: "float[:]", value: "float"):
     """
     mn = 0
     mx = len(boundaries) - 1
-    if abs(boundaries[0] - value) < 10 ** -8:
+    if abs(boundaries[0] - value) < 10**-8:
         return 0
 
-    if abs(boundaries[mn] - value) < 10 ** -8:
+    if abs(boundaries[mn] - value) < 10**-8:
         return mn - 1
 
     if boundaries[mn] <= value <= boundaries[mx]:
@@ -137,18 +135,18 @@ def find_index_bin(boundaries: "float[:]", value: "float"):
 def vector_norm(v):
     "Euclidean distance"
     v0, v1, v2 = v
-    return sqrt(v0 ** 2 + v1 ** 2 + v2 ** 2)
+    return sqrt(v0**2 + v1**2 + v2**2)
 
 
 def square_vector_norm(v):
     v0, v1, v2 = v
-    return v0 ** 2 + v1 ** 2 + v2 ** 2
+    return v0**2 + v1**2 + v2**2
 
 
 @boost
 def normalize(v: Tuple[float, float, float]):
     v0, v1, v2 = v
-    norm = sqrt(v0 ** 2 + v1 ** 2 + v2 ** 2)
+    norm = sqrt(v0**2 + v1**2 + v2**2)
     if norm == 0:
         raise ValueError
     return v0 / norm, v1 / norm, v2 / norm
@@ -170,7 +168,7 @@ def closest_point_to_lines2(
     # e = np.dot(v2,v2)          # Assuming v is normalized => length 1
     # f = np.dot(p1, p1) + np.dot(p2, p2)
     # s = (2*a*d + b*c)/(c**2-4*a*e)
-    s = (2 * d + b * c) / (c ** 2 - 4)  # Assuming v is normalized => a=e=1
+    s = (2 * d + b * c) / (c**2 - 4)  # Assuming v is normalized => a=e=1
     # t = (c*s - b)/(2*a)
     t = (c * s - b) / 2  # Assuming v is normalized => a=e=1
     sol = (p1 + t * v1 + p2 + s * v2) / 2
@@ -197,13 +195,21 @@ def prepare_linalg_solve(a: A2, d: A2):
 
 
 @boost
-def compute_distance(a: A2, d: A2, sol: "float64[:]"):
-    dists = list(map(lambda a, d: square_vector_norm(np.cross(sol - a, d)), a, d))
-    distance = vector_norm(dists) * np.sqrt(1 / len(a))
+def compute_distance(points: A2, vectors: A2, sol: "float64[:]"):
+    dists = list(
+        map(
+            lambda point, vector: square_vector_norm(np.cross(sol - point, vector)),
+            points,
+            vectors,
+        )
+    )
+    distance = np.mean(dists)
     return float(distance)
 
 
-def closest_point_to_lines(points, vectors):
+def closest_point_to_lines(
+    points: List[Tuple[float, float, float]], vectors: List[Tuple[float, float, float]]
+):
     """...
 
     Note: 9% of the time spent here (CProfile)
@@ -411,9 +417,7 @@ def make_ray_database(rays, bounding_box, log_print):
 
 
 @boost
-def create_cam_ray_ids(
-    cam_ray_ids_info: List[Tuple[int, int, int]], nb_cells_all: int
-):
+def create_cam_ray_ids(cam_ray_ids_info: List[Tuple[int, int, int]], nb_cells_all: int):
 
     cam_ray_ids = np.empty((nb_cells_all, 2), dtype=np.int32)
     start = 0
@@ -460,8 +464,7 @@ def compute_cells_traversed_by_rays(valid_rays, bounds, neighbours):
         cam_ray_ids_info.append((cam_id, ray_id, nb_cells))
 
     print(
-        "compute_cells_traversed_by_rays done in "
-        f"{perf_counter() - t_start:.2f} s"
+        f"compute_cells_traversed_by_rays done in {perf_counter() - t_start:.2f} s"
     )
 
     cells_all = np.vstack(cells_all)
@@ -525,7 +528,7 @@ def make_candidates(traversed, candidates0, raydb, log_print):
     # compute `indices_better_candidates` based on `penalizations`
     assert distances.min() > 0
     max_distances = distances.max()
-    multiplicator = 2 ** 4
+    multiplicator = 2**4
     while multiplicator < max_distances:
         multiplicator *= 2
     # sort: prefer larger number of cameras and then small distances
@@ -625,7 +628,7 @@ def kernel_make_approved_matches__min_distance_matches_1ray(
     approved_matches_ray = {}
     removed_because_sphere = 0
 
-    min_distance2_matches_1ray = min_distance_matches_1ray ** 2
+    min_distance2_matches_1ray = min_distance_matches_1ray**2
 
     for index_candidate in indices_better_candidates:
         distance = distances[index_candidate]
@@ -843,9 +846,7 @@ def space_traversal_matching(
 
     log_print("# of voxels traversed after expansion:", len(cells_all))
 
-    traversed, candidates0 = make_groups_by_cell_cam(
-        cells_all, cam_ray_ids, cam_match
-    )
+    traversed, candidates0 = make_groups_by_cell_cam(cells_all, cam_ray_ids, cam_match)
 
     log_print("Sorted and grouped by cell index. # of groups:", len(traversed))
 

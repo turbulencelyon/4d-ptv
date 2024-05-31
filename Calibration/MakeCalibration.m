@@ -61,7 +61,7 @@ if ~exist('FirstCam','var')
     FirstCam=1;
 end
 if ~exist('PlaneNumberList','var')
-    PlaneNumberList = FirstPlane:numel(zPlane);
+    PlaneNumberList = FirstPlane:numel(zPlanes);
 end
 
 % Total number of cameras
@@ -75,7 +75,7 @@ xyzRef(2).ref(1:NbzPlanes,:) = repmat([0 0 0],NbzPlanes,1); % pixels
 xyzRef(3).ref(1:NbzPlanes,:) = repmat([0 0 0],NbzPlanes,1); % pixels
 xyzRef(4).ref(1:NbzPlanes,:) = repmat([0 0 0],NbzPlanes,1); % pixels
 
-%% Let's treat every calibration pictures
+%% Let's treat every calibration picturesa
 for kz = PlaneNumberList
     z = zPlanes(kz)
     for kcam = FirstCam:Ncam
