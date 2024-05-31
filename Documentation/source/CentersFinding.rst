@@ -45,9 +45,9 @@ The function ``BackgroundComputation`` saves the three backgrounds in the file *
         
         session.input_path = "My4DPTVInstallationPath/Documentation/TestData/";  % My4DPTVInstallationPath has to be adapted !!!
         session.output_path = "My4DPTVInstallationPath/Documentation/TestData/";
-        BackgroundComputation(session,"MyExperiment",1,1,100,10) # for camera 1
-        BackgroundComputation(session,"MyExperiment",2,1,100,10) # for camera 2
-        BackgroundComputation(session,"MyExperiment",3,1,100,10) # for camera 3
+        BackgroundComputation(session,"MyExperiment",1,1,100,10) % for camera 1
+        BackgroundComputation(session,"MyExperiment",2,1,100,10) % for camera 2
+        BackgroundComputation(session,"MyExperiment",3,1,100,10) % for camera 3
 
 Once the background is calculated, you can launch ``CenterFinding2D.m``. This function will treat all pictures for a camera. You have to launch it for each camera. ``CenterFinding2D.m`` takes at least 6 arguments:
 
@@ -77,9 +77,9 @@ The threshold and point diameter values depend on the camera treated. To set the
     
         session.input_path = "My4DPTVInstallationPath/Documentation/TestData/";  % My4DPTVInstallationPath has to be adapted !!!
         session.output_path = "My4DPTVInstallationPath/Documentation/TestData/";
-        CC1 = CenterFinding2D(session,"MyExperiment",1,1,100,6000,3) # for camera 1
-        CC2 = CenterFinding2D(session,"MyExperiment",2,1,100,6000,3) # for camera 2
-        CC3 = CenterFinding2D(session,"MyExperiment",3,1,100,6000,3) # for camera 3
+        CC1 = CenterFinding2D(session,"MyExperiment",1,1,100,6000,3) % for camera 1
+        CC2 = CenterFinding2D(session,"MyExperiment",2,1,100,6000,3) % for camera 2
+        CC3 = CenterFinding2D(session,"MyExperiment",3,1,100,6000,3) % for camera 3
 
 
 .. warning::
