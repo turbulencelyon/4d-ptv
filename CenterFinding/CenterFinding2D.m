@@ -1,4 +1,4 @@
-function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,Test,PartialSave,BackgroundType,format)
+function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,Test,format,BackgroundType,PartialSave)
 %%% Detect particles position in picture and provides their positions in
 %%% px.
 %--------------------------------------------------------------------------------
@@ -11,9 +11,9 @@ function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,
 %%%     nframes                    : total number of pictures
 %%%     th                         : threshold
 %%%     sz                         : typical size of the particles
-%%%     Test                       : true-> test mode, false-> classic mode (optional)
-%%%     BackgroundType (optional)  : determine which background is substracted to pictures. By defaut is equal to BackgroundMean
+%%%     Test(optional)             : true (1)-> test mode, false (0)-> classic mode 
 %%%     format (optional)          : picture names. By defaut it is '%05d.tif'
+%%%     BackgroundType (optional)  : determine which background is substracted to pictures. By defaut is equal to BackgroundMean
 %%%     PartialSave (optional)     : if PartialSave>0 it remove background
 %%%     for the first PartialSave frames and save them in
 %%%     folderout/TestThreshold. Can be usefull to check if a particle
