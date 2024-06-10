@@ -38,7 +38,7 @@ The function ``track3d.m`` was made for that and requires 10 arguments:
     
     Input and output files of ``track3d.m`` function.
 
-This function creates folders and calls ``track3d_manualfit.m`` function which estimates the next particle positions doing a *manual fit* instead of using ``polyfit`` function which is 30 times longer. The expected particle position is estimated using the last *npriormax* points. It creates a MATLAB structure and saves it as a file *session.output_path/Processed_DATA/ManipName/tracks_%FileName.h5*. This .h5 file can be openned with the function ``h52tracks.m``` function which creates a MATLAB structure from the .h5 file. For each trajectory indexed by *kt*, the structure called here *traj* has the fields:
+This function creates folders and calls ``track3d_manualfit.m`` function which estimates the next particle positions doing a *manual fit* instead of using ``polyfit`` function which is 30 times longer. The expected particle position is estimated using the last *npriormax* points. It creates a MATLAB structure and saves it as a file *session.output_path/Processed_DATA/ManipName/tracks_%FileName.h5*. Be careful, the code returns an error if it rewrites an existing file. This .h5 file can be openned with the function ``h52tracks.m``` function which creates a MATLAB structure from the .h5 file. For each trajectory indexed by *kt*, the structure called here *traj* has the fields:
 
 - traj(kt).ntraj  : trajectory index,
 - traj(kt).L      : trajectory length,

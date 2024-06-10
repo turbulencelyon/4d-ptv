@@ -59,9 +59,11 @@ Once the background is calculated, you can launch ``CenterFinding2D.m``. This fu
 - **th**                        : threshold value to detect points,
 - **sz**                        : typical point diameter (in pixels),
 - **Test (optional)**           : true/false. If true enters in test mode,
-- **PartialSave**               : if >0 remove background from the first PartialSave pictures and save them in folderout/TestThreshold. Can be usefull to check if a particle moves,
-- **BackgroundType (optional)** : determine which background is substracted to pictures. By defaut is equal to BackgroundMean,
-- **format (optional)**         : pictures name format : equals to '%05d.tif' by defaut. The beginning of picture names has to be '%ManipName_cam%CamNum_%format'. 
+- **format (optional)**         : pictures name format : equals to '%05d.tif' by defaut. The beginning of picture names has to be '%ManipName_cam%CamNum_%format'.
+- **BackgroundType (optional)** : determine which background is substracted to pictures. By defaut is equal to BackgroundMean.
+- **PartialSave**               : if >0 remove background from the first PartialSave pictures and save them in folderout/TestThreshold. Can be usefull to check if a particle moves.
+
+ 
 
 The threshold and point diameter values depend on the camera treated. To set the best values, a test mode can be activated thanks to *Test* argument. In test mode, only the first frame is analysed and several plots are shown to help you to determine the best values. We advice you to set these values in order to get more or less the same number of detected particles for each camera.
 
@@ -77,9 +79,9 @@ The threshold and point diameter values depend on the camera treated. To set the
     
         session.input_path = "My4DPTVInstallationPath/Documentation/TestData/";  % My4DPTVInstallationPath has to be adapted !!!
         session.output_path = "My4DPTVInstallationPath/Documentation/TestData/";
-        CC1 = CenterFinding2D(session,"MyExperiment",1,1,100,6000,3,'%03d.tif') % for camera 1
-        CC2 = CenterFinding2D(session,"MyExperiment",2,1,100,6000,3,'%03d.tif') % for camera 2
-        CC3 = CenterFinding2D(session,"MyExperiment",3,1,100,6000,3,'%03d.tif') % for camera 3
+        CC1 = CenterFinding2D(session,"MyExperiment",1,1,100,6000,3,0,'%03d.tif') % for camera 1
+        CC2 = CenterFinding2D(session,"MyExperiment",2,1,100,6000,3,0,'%03d.tif') % for camera 2
+        CC3 = CenterFinding2D(session,"MyExperiment",3,1,100,6000,3,0,'%03d.tif') % for camera 3
 
 
 .. warning::
