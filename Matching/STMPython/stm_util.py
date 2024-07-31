@@ -196,14 +196,13 @@ def prepare_linalg_solve(a: A2, d: A2):
 
 @boost
 def compute_distance(points: A2, vectors: A2, sol: "float64[:]"):
-    dists = list(
-        map(
-            lambda point, vector: square_vector_norm(np.cross(sol - point, vector)),
-            points,
-            vectors,
-        )
-    )
-    distance = np.mean(dists)
+
+    def func(point, vector):
+        return square_vector_norm(np.cross(sol - point, vector))
+
+    dists = list(map(func, points, vectors))
+
+    distance = np.mean(dists)  
     return float(distance)
 
 
@@ -526,7 +525,6 @@ def make_candidates(traversed, candidates0, raydb, log_print):
         nb_cameras[index] = len(candidate)
 
     # compute `indices_better_candidates` based on `penalizations`
-    assert distances.min() > 0
     max_distances = distances.max()
     multiplicator = 2**4
     while multiplicator < max_distances:

@@ -75,7 +75,7 @@ xyzRef(2).ref(1:NbzPlanes,:) = repmat([0 0 0],NbzPlanes,1); % pixels
 xyzRef(3).ref(1:NbzPlanes,:) = repmat([0 0 0],NbzPlanes,1); % pixels
 xyzRef(4).ref(1:NbzPlanes,:) = repmat([0 0 0],NbzPlanes,1); % pixels
 
-%% Let's treat every calibration picturesa
+%% Let's treat every calibration pictures
 for kz = PlaneNumberList
     z = zPlanes(kz)
     for kcam = FirstCam:Ncam

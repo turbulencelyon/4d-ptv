@@ -1,4 +1,4 @@
-function Calib_visualisation(dirIn,CamID,Nplane)
+function Calib_visualisation(dirIn,filemane,CamID,Nplane)
 
 %% Plot the calibration points on the raw image in order to check if the calibration is good 
 %% Input 
@@ -13,8 +13,8 @@ function Calib_visualisation(dirIn,CamID,Nplane)
 
 
 %%Load the calibration and definition of pimg
-calib_path=sprintf('%s/calib.mat',dirIn);
-load(calib_path);
+calib_path=fullfile(dirIn,filemane);
+load(calib_path);%calib_path);
 
 
 %%Load the image file
@@ -26,9 +26,9 @@ for kcam=CamID
     Img=imread(filename);
     imshow(Img);
     hold on 
-    plot(PimgX,PimgY,'x');
+    plot(PimgX,PimgY,'rx',LineWidth=3);
     PimgX=[];
     PimgY=[];
-    filenae=[];
+    filename=[];
 end
 end 

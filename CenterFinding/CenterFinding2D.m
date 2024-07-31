@@ -22,7 +22,7 @@ function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,
 %--------------------------------------------------------------------------------
 % 2020-2021 : D. Dumont (adapted from M. Bourgoin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-close all
+%close all
 
 %% Test if Test exists or not
 if ~exist('Test','var')

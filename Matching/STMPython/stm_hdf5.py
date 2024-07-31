@@ -106,13 +106,9 @@ def compute_stm(
     numpts = fin.read(4)  # Read 4 bytes header
     with h5py.File(fileout, "w") as file:
         while len(numpts) > 0 and frameid < stop_frames:  # If something is read
-            numpts = struct.unpack("I", numpts)[
-                0
-            ]  # Interpret header as 4 byte uint
+            numpts = struct.unpack("I", numpts)[0]  # Interpret header as 4 byte uint
             with open(filelog, "a") as flog:
-                flog.write(
-                    f"#######\nFrame: {frameid}\nNumber of rays: {numpts}\n"
-                )
+                flog.write(f"#######\nFrame: {frameid}\nNumber of rays: {numpts}\n")
 
             print("Frame:", frameid, ". # of rays:", numpts)
 
@@ -138,6 +134,7 @@ def compute_stm(
                     cam_match=cam_match,
                     neighbours=neighbours,
                     logfile=filelog,
+                    max_matches_per_ray=max_matches_per_ray,
                     max_distance=max_distance,
                     min_distance_matches_1ray=min_distance_matches_1ray,
                 )

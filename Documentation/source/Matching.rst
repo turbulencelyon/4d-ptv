@@ -110,17 +110,15 @@ To run matching on test Data, in a terminal
 
 .. code-block:: bash
 
-    python stm.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_11-20.dat" 1 10 2 0.2 400 400 250 2
+    python stm_hdf5.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_11-20.dat" 1 10 2 0.2 400 400 250 2
 
-The script creates in the rays folder a file called
-``matched_cam{cam_match}_{minframe}-{maxframe}.dat`` which contains all matched
-points.
+The script creates in the rays folder a file in .h5 which contains all matched points. It is also possible to use stm.py that gives a .dat file.
 
-This kind of file can be openned with the Matlab function `readmatches.m`
+This kind of .dat file can be openned with the Matlab function `readmatches.m`
 
 .. code-block:: matlab
 
-    [matches,other,params] = readmatches("My4DPTVInstallationPath/Documentation/TestData/Processed_DATA/MyExperiment/matched_cam2_11-20.dat")
+    [matches,other,params] = readmatches("My4DPTVInstallationPath/Documentation/TestData/Processed_DATA/MyExperiment/matched_11-20cam2_1-9.dat")
 
 - **matches** which is a nmatches x 5 matrix [FrameNumber, x, y, z, Error]
 - **other** which is a nmatches x ? matrix [NumberofRaysUsedInMatch, cam0ID,ray0ID,cam1ID,rays1ID,...]
