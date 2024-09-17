@@ -14,7 +14,7 @@ function Calib_visualisation(dirIn,filemane,CamID,Nplane)
 
 %%Load the calibration and definition of pimg
 calib_path=fullfile(dirIn,filemane);
-load(calib_path);%calib_path);
+load(calib_path);
 
 
 %%Load the image file
