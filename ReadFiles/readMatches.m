@@ -1,4 +1,4 @@
-function [data,other,params] = readMatches_(fname,maxnframes)
+function [data,other,params] = readMatches(fname,maxnframes)
 %
 % [data,other,params] = readmatches_(fname,maxnframes)
 %

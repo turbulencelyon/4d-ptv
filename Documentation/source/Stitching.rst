@@ -29,7 +29,7 @@ The function ``Stitching.m`` is useful for that and takes 7 arguments:
 - **dvmax**       : maximum tolerated relative velocity difference (component by component) between the end of the first trajectory and the beginning of the stitched one,
 - **lmin**        : minimum length for a trajectory to be stitched.
 
-The function ``Stitching.m`` will create a file **stitched_FileName_dfmax.h5** in the folder **ManipName**.
+The function ``Stitching.m`` will create a file **stitched_FileName_dfmax.h5** in the folder **ManipName**. Be careful, the code returns an error if it rewrites an existing file.
 
 .. warning:: 
 

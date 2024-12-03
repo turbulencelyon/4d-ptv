@@ -11,8 +11,8 @@ Documentation/build
 
 **/__pycache__/*
 
-Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/matched*
-Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/*.log
+
+Documentation/TestData/Processed_DATA/MyExperiment/*
 
 Matching/STMCpp/*.h5
 Matching/STMPython/*.h5
