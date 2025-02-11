@@ -25,7 +25,7 @@ from stm import compute_stm
 
 args = [
     "../../Documentation/TestData/Processed_DATA/"
-    "MyExperiment/Parallel/Matching/Rays/rays_1-10.dat"
+    "MyExperiment/Parallel/Matching/Rays/rays_11-20.dat"
 ]
 
 args.extend([1, 2, 2, 0.2, 400, 400, 250, 2])
