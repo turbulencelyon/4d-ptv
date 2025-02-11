@@ -27,3 +27,9 @@ black:
 
 test:
 	pytest test_stm_util.py
+
+lock:
+	pdm lock --exclude-newer 2022-08-01
+
+sync:
+	pdm sync
