@@ -1,7 +1,7 @@
-function BackgroundComputation(session,ManipName,CamNum,StartFrame,EndFrame ,Step,format)
+function BackgroundComputation(session,ManipName,CamNum,firstFrame,endFrame,Step,format)
 %%% Compute the background for the pictures of the camera NumCam in the
 %%% experiment ManipName
-%%% Between picture StartFrame and EndFrame ( every Step frame) it takes
+%%% Between picture firstFrame and endFrame (every Step frame) it takes
 %%% the maximal/minimal/mean intensity for each pixel.
 %----------------------------------------------------------------------------
 %%% Parameters : 
@@ -9,8 +9,8 @@ function BackgroundComputation(session,ManipName,CamNum,StartFrame,EndFrame ,Ste
 % and session.output_path)
 %%%     ManipName    : Name of the folder experiment
 %%%     NumCam       : number of the camera studied
-%%%     StartFrame   : number of first frame
-%%%     EndFrame     : number of the last frame
+%%%     firstFrame   : number of first frame
+%%%     endFrame     : number of the last frame
 %%%     Step         : step between 2 frame taken for computation
 %%%     format (optional)     : picture names. By defaut it is '%05d.tif'.
 %%%     The beginning of picture names has to be
@@ -35,19 +35,19 @@ end
 
 % If Step is not define take a step such as the average will be done over
 % 1000 pictures.
-if (~ exist("Step","var") && (EndFrame-StartFrame)>=1000)
-    Step = floor((EndFrame-StartFrame)/1000);
-elseif (~ exist("Step","var") && (EndFrame-StartFrame)<1000)
+if (~ exist("Step","var") && (endFrame-firstFrame)>=1000)
+    Step = floor((endFrame-firstFrame)/1000);
+elseif (~ exist("Step","var") && (endFrame-firstFrame)<1000)
     Step = 1;
 end
 
 BaseName = join([ManipName '_cam' num2str(CamNum) '_' format],'');
 compteur = 0;
-for kframe=StartFrame:Step:EndFrame
+for kframe=firstFrame:Step:endFrame
     ImgName = fullfile(folderin,sprintf(BaseName, kframe));
     fprintf("%s \n",ImgName);
     
-    if kframe==StartFrame
+    if kframe==firstFrame
         BackgroundMax = imread(ImgName);
         BackgroundMean = uint32(imread(ImgName));
         BackgroundMin = imread(ImgName);

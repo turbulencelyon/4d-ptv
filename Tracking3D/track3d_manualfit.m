@@ -194,6 +194,11 @@ last_traj = find(tracks_array(:,5)==length(fstart));
 flong(end+1) = length(last_traj);
 
 ftrackselec = find(flong>=lmin); % index of trajectories longer than lmin
+if ftrackselec<1001
+    chunksize=1;
+else
+    chunksize=1000;
+end
 traj = struct('ntraj',cell(1,numel(i)),'L',[],'frames',[],'x',[],'y',[],'z',[],'nmatch',[]);
 for kk = 1 :length(ftrackselec)
     ll  = flong(ftrackselec(kk));
@@ -216,7 +221,7 @@ if ~test
     fields=fieldnames(traj);
     for k=1:length(fields) %for each field
         fieldk=fields{k};
-        h5create(FileSaveName,['/' fieldk],[length(vertcat(traj.(fieldk))) 1],'ChunkSize',[1000 1],'Deflate',9)
+        h5create(FileSaveName,['/' fieldk],[length(vertcat(traj.(fieldk))) 1],'ChunkSize',[chunksize 1],'Deflate',9)
         h5write(FileSaveName,['/' fieldk],vertcat(traj.(fieldk)))
     end
     % saving of tracking parameters

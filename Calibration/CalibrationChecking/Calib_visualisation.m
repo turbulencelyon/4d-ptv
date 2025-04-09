@@ -21,12 +21,19 @@ load(calib_path);
 for kcam=CamID
     PimgX=calib(Nplane,kcam).pimg(:,1);
     PimgY=calib(Nplane,kcam).pimg(:,2);
-    figure('numberTitle','off','Name',sprintf('Cam %d',kcam))
+    f1=figure('numberTitle','off','Name',sprintf('PX -- Cam %d',kcam))
     filename = sprintf('%s/CalibrationPlan_%d_cam%d.%s',dirIn, Nplane, kcam,'tif');        
     Img=imread(filename);
     imshow(Img);
     hold on 
     plot(PimgX,PimgY,'rx',LineWidth=3);
+
+    [x_rw,y_rw] = transformPointsInverse(calib(Nplane,kcam).T3rw2px,PimgX,PimgY);%invert(calib(Nplane,kcam).T1px2rw)
+     f2=figure('numberTitle','off','Name',sprintf('RW -- Cam %d',kcam))
+     plot(x_rw,y_rw,'*')
+
+
+
     PimgX=[];
     PimgY=[];
     filename=[];

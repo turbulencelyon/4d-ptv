@@ -50,25 +50,32 @@ for kcam=1:numel(camID)
     
     % load centers for camera camID(kcam)
     fileCenters=fullfile(folderin,['centers_cam' num2str(camID(kcam)) '.mat']);
-    [CC,nframes] = readCentersMAT(fileCenters); 
+    [CC,firstFrame,endFrame] = readCentersMAT(fileCenters); 
     
     % loop over frames
-    for k=1:nframes
+    for k=firstFrame:endFrame
         if rem(k,100)==0
             fprintf("cam %d frame %d...\n",kcam,k)
         end
         % convert pixel coordinates into rays of light using the
         % calibration
-        [P,V]=findRays(calibNcam,CC(k).X',CC(k).Y',Ttype);
-        
-        % exclude particles for which rays are obtained by extrapolation
-        % outside the actually calibrated convex hull
-        rayID=find((~isnan(P(:,1)))&(~isempty(P(:,1))));
-        if ~isempty(rayID)
-            data(k).P=P(rayID,:);
-            data(k).V=V(rayID,:);
-            data(k).rayID=rayID;
-%             kframes = kframes + 1;
+        if ~isempty(CC(k).X)
+            [P,V]=findRays(calibNcam,CC(k).X',CC(k).Y',Ttype);
+
+            % exclude particles for which rays are obtained by extrapolation
+            % outside the actually calibrated convex hull
+
+            rayID=find((~isnan(P(:,1)))&(~isempty(P(:,1))));
+            if ~isempty(rayID)
+                data(k).P=P(rayID,:);
+                data(k).V=V(rayID,:);
+                data(k).rayID=rayID;
+                %             kframes = kframes + 1;
+            end
+        else
+                data(k).P=[];
+                data(k).V=[];
+                data(k).rayID=[];
         end
     end
     datacam(kcam).data=data;
@@ -82,13 +89,13 @@ save(fullfile(folderout,'rays.mat'),'datacam','Calib','-v7.3')
 %%
 % write results in file
 fprintf("Writing data in process...\n")
-for kframe=1:nframes
+for kframe=firstFrame:endFrame
     Nrays=0;
     for kcam=1:numel(camID)
         Nrays = Nrays + numel(datacam(kcam).data(kframe).rayID);
     end
     fwrite(fid,Nrays,'uint32');
-    
+
     for kcam=1:numel(camID)
         for kray=1:numel(datacam(kcam).data(kframe).rayID)
             fwrite(fid,camID(kcam),'uint8');

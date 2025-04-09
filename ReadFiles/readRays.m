@@ -18,8 +18,8 @@ while and((nread < nframes),(~feof(fid)))
     kframe=kframe+1;
     nrays = fread(fid,1,'uint32');
     if kframe >= nstart
-        kframe
-        nrays
+        kframe;
+        nrays;
         nread=nread+1
         for kray=1:nrays
             camID(kray) = fread(fid,1,'uint8');

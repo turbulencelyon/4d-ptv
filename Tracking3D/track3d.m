@@ -42,7 +42,7 @@ folderin = fullfile(session.input_path, 'Processed_DATA', ManipName);
 folderout = fullfile(session.output_path, 'Processed_DATA', ManipName);
 
 if ~isfolder(folderout)
-    makedirs(folderout)
+    mkdir(folderout)
 end
 
 % disp('Loading matches...');

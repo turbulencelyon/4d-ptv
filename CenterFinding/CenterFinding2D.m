@@ -1,4 +1,4 @@
-function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,Test,format,BackgroundType,PartialSave)
+function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,endFrame,th,sz,Test,format,BackgroundType,PartialSave)
 %%% Detect particles position in picture and provides their positions in
 %%% px.
 %--------------------------------------------------------------------------------
@@ -8,7 +8,7 @@ function CC = CenterFinding2D(session,ManipName,CamNum,firstFrame,nframes,th,sz,
 %%%     ManipName                  : Name of the folder experiment
 %%%     NumCam                     : number of the camera studied
 %%%     firstFrame                 : number of the first frame
-%%%     nframes                    : total number of pictures
+%%%     endFrame                   : number of the last frame
 %%%     th                         : threshold
 %%%     sz                         : typical size of the particles
 %%%     Test(optional)             : true (1)-> test mode, false (0)-> classic mode 
@@ -67,7 +67,7 @@ end
 
 BaseName = join([ManipName '_cam' num2str(CamNum) '_' format],''); % base name of pictures
 if ~Test
-    for kframe=firstFrame:nframes
+    for kframe=firstFrame:endFrame
         disp(kframe);
         ImgName = fullfile(folderin,sprintf(BaseName, kframe));
         fprintf("%s \n",ImgName);
@@ -100,7 +100,7 @@ if ~Test
     end
     
     %% Centers saving into a .mat file
-    save(fullfile(folderout,['centers_cam' num2str(CamNum) '.mat']),"CC",'nframes','-v7.3')
+    save(fullfile(folderout,['centers_cam' num2str(CamNum) '.mat']),"CC",'firstFrame','endFrame','-v7.3')
 else
     if PartialSave>0
         fprintf("Let's remove the background from the first PartialSave frames and save them")

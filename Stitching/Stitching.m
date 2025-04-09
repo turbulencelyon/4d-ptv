@@ -21,7 +21,7 @@ function StitchedTraj = Stitching(session,ManipName,FileName,dfmax,dxmax,dvmax,l
 % compute velocity),
 % framerate     : framerate of the experiment.
 % ------------------------------------------------------------------------------------------
-addpath '4d-ptv/ReadFiles'
+addpath '../ReadFiles'
 datapath = fullfile(session.input_path,'Processed_DATA',ManipName,FileName);
 filepath = fullfile(session.output_path,'Processed_DATA', ManipName, ['stiched_' char(FileName) '_dfmax' num2str(dfmax)]);
 
