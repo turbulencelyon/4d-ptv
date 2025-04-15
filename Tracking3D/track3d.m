@@ -47,7 +47,7 @@ end
 
 % disp('Loading matches...');
 filename = fullfile(folderin,FileName);
-data = h52matches(filename,NbFrame,minFrame);
+data = h52matches(filename,NbFrame,minFrame,4);
 
 %% Call for track3d_manualfit function
 [tracks,traj] = track3d_manualfit(folderout,FileName,data,maxdist,lmin,flag_pred,npriormax,flag_conf,test);
