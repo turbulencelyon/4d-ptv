@@ -42,39 +42,17 @@ You first need to compile the code with the command ``make``. Note that you
 need a quite recent C++ compiler (more details `here
 <https://fluidsim.readthedocs.io/en/latest/install.html#about-using-pythran-to-compile-functions>`_).
 
-With a file ``~/.pythranrc`` containing
-
-.. code-block::
-
-    [compiler]
-    CXX=clang++
-    CC=clang
-    blas=openblas
-
-one can create a dedicated conda environment and compile the code with:
-
-.. code-block:: bash
-
-    conda create -y -n env-4dptv python=3.8 pythran transonic clangdev "blas-devel[build=*openblas]"
-    conda activate env-4dptv
-    make
-
-To check that it works, you can then run::
-
-    make test
-    make bench
-    # for this one, the C++ code has to be compiled
-    make bench_cpp
+To install the code, you have to follow the instructions in the README.md in the folder Matching/STMPython of the repository.
 
 Usage
 ~~~~~
 
-The documentation of the script can be obtained with ``./stm.py -h``, which
+The documentation of the script can be obtained with ``./stm_hdf5.py -h``, which
 gives:
 
 .. code-block::
 
-    usage: stm.py [-h] [-md1r MIN_DISTANCE_MATCHES_1RAY]
+    usage: stm_hdf5.py [-h] [-md1r MIN_DISTANCE_MATCHES_1RAY]
                 path_file start_frame stop_frame cam_match max_distance nx ny nz
                 max_matches_per_ray [bounding_box]
 
@@ -87,7 +65,7 @@ gives:
 
     or (to specify the limits of the visualized region):
 
-    ./stm.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2 "[[-140, 140], [-150, 150], [5, 170]]"
+    ./stm_hdf5.py $PATH_INPUT_DATA 1 2 2 0.2 400 400 250 2 "[[-140, 140], [-150, 150], [5, 170]]"
 
     positional arguments:
     path_file             Path towards the file containing the ray data
@@ -112,9 +90,9 @@ To run matching on test Data, in a terminal
 
     python stm_hdf5.py "../../Documentation/TestData/Processed_DATA/MyExperiment/Parallel/Matching/Rays/rays_11-20.dat" 1 10 2 0.2 400 400 250 2
 
-The script creates in the rays folder a file in .h5 which contains all matched points. It is also possible to use stm.py that gives a .dat file.
-
-This kind of .dat file can be openned with the Matlab function `readmatches.m`
+The script creates in the rays folder a file in .h5 which contains all matched points. Use the function h52matches.m store in the folder ReadFiles of the repository to read the matches obtained.
+Warning: the matching error calculated by the code is not correct (in spring 2025)!!
+(It is also possible to use stm.py that gives a .dat file. This kind of .dat file can be openned with the Matlab function `readmatches.m`.)
 
 .. code-block:: matlab
 

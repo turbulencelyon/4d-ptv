@@ -194,7 +194,7 @@ last_traj = find(tracks_array(:,5)==length(fstart));
 flong(end+1) = length(last_traj);
 
 ftrackselec = find(flong>=lmin); % index of trajectories longer than lmin
-if ftrackselec<1001
+if length(ftrackselec)<1001
     chunksize=1;
 else
     chunksize=1000;

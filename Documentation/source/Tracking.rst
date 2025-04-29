@@ -13,7 +13,7 @@ How does it work?
         
     However, when there are many particles in the flow, it is higly probable to do errors when other particles goes behing particle :math:`P`. This typical situation is represented on the right in the figure: particles two particles are tracked but when they become close this tracking method makes a mistake. The yellow particle is closer to the blue one so is attributed to the blue trajectory although it belongs to the black trajectory.
     To avoid that kind of mistakes, we do *predictive tracking*. For each time :math:`t`, we estimate the expected particle position thanks to previous particle position and then we look for the closest particle to the expected position.
-    
+    Warning : the calculation of the "position" of the particle in the predictive tracking seems to be wrong !
 .. figure:: Figures/Tracking.png
     :width: 60%
     
@@ -32,7 +32,7 @@ The function ``track3d.m`` was made for that and requires 10 arguments:
 - **npriormax** : Maximum number of prior frames used for predictive tracking
 - **flag_conf** : 1 for conflict solving, 0 otherwise
 - **minFrame**  : (optional) number of the first frame. Default = 1.
-
+- **test**      : (optional) If test=1, data are not saved. Default = 0.
 .. figure:: Figures/InOutputtrack3d.png
     :width: 80%
     

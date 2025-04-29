@@ -24,8 +24,8 @@ The function ``BackgroundComputation.m`` requires 5 arguments:
 - **session**                : structure containing paths of MyPath folders,
 - **ManipName**              : name of the experiment,
 - **CamNum**                 : camera number,
-- **StartFrame**             : number of the first frame,
-- **EndFrame**               : number of the last frame,
+- **firstFrame**             : number of the first frame,
+- **endFrame**               : number of the last frame,
 - **Step (optional)**        : step between two frames. By defaut ajusted to compute background over 1000 frames uniformly reparted in the experiment,
 - **format (optional)**      : pictures name format : equals to '%05d.tif' by defaut. The beginning of picture names has to be '%ManipName_cam%CamNum_%format'.
 
@@ -55,7 +55,7 @@ Once the background is calculated, you can launch ``CenterFinding2D.m``. This fu
 - **ManipName**                 : name of the experiment,
 - **NumCam**                    : camera number,
 - **firstFrame**                : the first frame to treat,
-- **nframes**                   : the last frames to treat,
+- **endFrame**                   : the last frames to treat,
 - **th**                        : threshold value to detect points,
 - **sz**                        : typical point diameter (in pixels),
 - **Test (optional)**           : true/false. If true enters in test mode,

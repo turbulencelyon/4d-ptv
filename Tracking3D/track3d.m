@@ -1,4 +1,5 @@
 function [tracks,traj]=track3d(session,ManipName,FileName,NbFrame,maxdist,lmin,flag_pred,npriormax,flag_conf,minFrame,test)
+%function [tracks,traj]=track3d(session,ManipName,FileName,nCam,NbFrame,maxdist,lmin,flag_pred,npriormax,flag_conf,minFrame,test)
 
 % Load matches data and give it to track3d_manualfit to track particles.
 % ____________________________________________________________________________
@@ -7,6 +8,7 @@ function [tracks,traj]=track3d(session,ManipName,FileName,NbFrame,maxdist,lmin,f
 % and session.output_path)
 % ManipName : Name of the experiment
 % FileName  : Name of the matched file without its extension (without .h5)
+%%% nCam      : Number of camera in the used for rays calculation and matches
 % NbFrame   : Number of frame in the file
 % maxdist   : maximum travelled distance between two successive frames
 % lmin      : minimum length of a trajectory (number of frames)
@@ -47,8 +49,9 @@ end
 
 % disp('Loading matches...');
 filename = fullfile(folderin,FileName);
-data = h52matches(filename,NbFrame,minFrame,4);
 
+data = h52matchesTracking(filename,NbFrame,minFrame);
+%data = h52matches(filename,NbFrame,minFrame,nCam);
 %% Call for track3d_manualfit function
 [tracks,traj] = track3d_manualfit(folderout,FileName,data,maxdist,lmin,flag_pred,npriormax,flag_conf,test);
 
